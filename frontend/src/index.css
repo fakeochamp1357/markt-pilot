@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-gray-50 text-ink-900 antialiased;
+    font-size: 16px;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* iOS-Style Tab Bar Höhe */
+  :root {
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+
+  /* Pull-to-refresh-Ersatz — disable overscroll bounce wenn JS-Pull aktiv */
+  html {
+    overscroll-behavior-y: contain;
+  }
+}
+
+@layer components {
+  .tap {
+    @apply min-h-tap min-w-tap inline-flex items-center justify-center;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-card border border-gray-100;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium border
+           border-gray-200 bg-white text-ink-700 active:bg-gray-100 transition-colors;
+  }
+
+  .chip-active {
+    @apply bg-brand-600 text-white border-brand-600;
+  }
+
+  .input {
+    @apply w-full min-h-tap rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-base
+           placeholder:text-ink-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-200
+           focus:outline-none;
+  }
+
+  .btn {
+    @apply tap rounded-xl px-4 text-base font-semibold transition-colors;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-700;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white border border-gray-200 text-ink-800 hover:bg-gray-50 active:bg-gray-100;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-ink-700 mb-1;
+  }
+
+  .badge-offline {
+    @apply inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800;
+  }
+
+  .price-big {
+    @apply font-bold text-ink-900;
+    font-size: 22px;
+    line-height: 1.1;
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: calc(0.5rem + var(--safe-bottom));
+  }
+
+  .pt-safe {
+    padding-top: calc(0.5rem + var(--safe-top));
+  }
+}
+
+/* Sheet-Animation */
+.sheet-enter {
+  transform: translateY(100%);
+}
+.sheet-enter-active {
+  transform: translateY(0);
+  transition: transform 240ms ease-out;
+}
+.sheet-exit-active {
+  transform: translateY(100%);
+  transition: transform 200ms ease-in;
+}
+
+.backdrop-enter {
+  opacity: 0;
+}
+.backdrop-enter-active {
+  opacity: 1;
+  transition: opacity 200ms ease-out;
+}
+.backdrop-exit-active {
+  opacity: 0;
+  transition: opacity 150ms ease-in;
+}
