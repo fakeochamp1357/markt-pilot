@@ -1,0 +1,55 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Virtualenvs ---
+venv/
+.venv/
+env/
+
+# --- Secrets / Local ---
+.env
+.env.local
+*.db
+*.sqlite
+*.sqlite3
+backend/markt_pilot.db
+backend/markt_pilot.db-journal
+
+# --- Node ---
+node_modules/
+dist/
+.vite/
+*.log
+npm-debug.log*
+
+# --- Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Screenshots / scratch ---
+.references/
+*.png.tmp
+nav.json
+shoot.mjs
+
+# --- Nested old GitHub clone (was here before init) ---
+markt-pilot-main/
+
+# --- Frontend build artifacts ---
+frontend/dist/
+frontend/.vite/
+
+# --- Backend build artifacts ---
+backend/.pytest_cache/
