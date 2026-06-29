@@ -43,6 +43,8 @@ Thumbs.db
 *.png.tmp
 nav.json
 shoot.mjs
+snap.mjs
+flow.mjs
 
 # --- Nested old GitHub clone (was here before init) ---
 markt-pilot-main/

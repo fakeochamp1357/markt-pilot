@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Search, SlidersHorizontal, ArrowUpDown, RefreshCcw, X } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { ProductCard } from '@/components/ProductCard';
@@ -37,10 +38,20 @@ export function PreislistePage() {
   const { products, categories, fromCache, refresh } = useMarketData();
   const isOnline = useAppStore((s) => s.isOnline);
   const outboxCount = useAppStore((s) => s.outboxCount);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search, 250);
-  const [filter, setFilter] = useState<FilterKey>('all');
+  const initialFilter: FilterKey = (() => {
+    const raw = searchParams.get('category');
+    if (raw && /^\d+$/.test(raw)) {
+      const id = parseInt(raw, 10);
+      const exists = categories.some((c) => c.id === id);
+      if (exists) return id;
+    }
+    return 'all';
+  })();
+  const [filter, setFilter] = useState<FilterKey>(initialFilter);
   const [sort, setSort] = useState<SortKey>('name_asc');
   const [showSort, setShowSort] = useState(false);
 
@@ -50,6 +61,13 @@ export function PreislistePage() {
   const [stockSheet, setStockSheet] = useState<Product | null>(null);
 
   const [refreshing, setRefreshing] = useState(false);
+
+  const activeCategory = typeof filter === 'number' ? categories.find((c) => c.id === filter) : null;
+
+  const clearCategory = () => {
+    setFilter('all');
+    setSearchParams({}, { replace: true });
+  };
 
   const pullStart = useRef<{ y: number } | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
@@ -213,6 +231,28 @@ export function PreislistePage() {
           </button>
         )}
       </div>
+
+      {activeCategory && (
+        <div
+          className="mt-2 flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-sm"
+          role="status"
+          aria-live="polite"
+        >
+          <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: activeCategory.color }} />
+          <span className="font-semibold">Kategorie: {activeCategory.name}</span>
+          <span className="ml-auto text-xs text-ink-500">
+            {filtered.length} {filtered.length === 1 ? 'Produkt' : 'Produkte'}
+          </span>
+          <button
+            type="button"
+            onClick={clearCategory}
+            className="tap rounded-full p-1 hover:bg-gray-200"
+            aria-label="Kategorie-Filter aufheben"
+          >
+            <X size={16} className="text-ink-700" />
+          </button>
+        </div>
+      )}
 
       <div className="mt-3 flex items-center gap-2">
         <button

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Pencil, Trash2, ChevronRight } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { useMarketData } from '@/hooks/useData';
 import { useAppStore } from '@/store';
@@ -19,6 +20,7 @@ const PRESET_COLORS = [
 export function CategoriesPage() {
   const { products, categories, refresh } = useMarketData();
   const isOnline = useAppStore((s) => s.isOnline);
+  const navigate = useNavigate();
 
   const [editor, setEditor] = useState<Category | 'new' | null>(null);
   const [name, setName] = useState('');
@@ -37,6 +39,7 @@ export function CategoriesPage() {
     setSortOrder(String(categories.length + 1));
     setEditor('new');
   };
+  const goToList = (c: Category) => navigate(`/?category=${c.id}`);
   const openEdit = (c: Category) => {
     setName(c.name);
     setColor(c.color);
@@ -100,31 +103,39 @@ export function CategoriesPage() {
           <li className="card p-6 text-center text-ink-500">Noch keine Kategorien.</li>
         )}
         {categories.map((c) => (
-          <li key={c.id} className="card flex items-center gap-3 p-3">
-            <span
-              aria-hidden
-              className="h-10 w-1.5 rounded-full"
-              style={{ backgroundColor: c.color }}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold truncate">{c.name}</p>
-              <p className="text-xs text-ink-500">{counts.get(c.id) ?? 0} Produkte</p>
-            </div>
+          <li key={c.id}>
             <button
               type="button"
-              onClick={() => openEdit(c)}
-              className="tap rounded-full hover:bg-gray-100"
-              aria-label="Bearbeiten"
+              onClick={() => goToList(c)}
+              className="card flex w-full items-center gap-3 p-3 text-left hover:bg-gray-50 active:bg-gray-100"
+              aria-label={`Produkte in ${c.name} anzeigen`}
             >
-              <Pencil size={18} className="text-ink-700" />
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete(c)}
-              className="tap rounded-full hover:bg-red-50"
-              aria-label="Löschen"
-            >
-              <Trash2 size={18} className="text-red-600" />
+              <span
+                aria-hidden
+                className="h-10 w-1.5 rounded-full"
+                style={{ backgroundColor: c.color }}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold truncate">{c.name}</p>
+                <p className="text-xs text-ink-500">{counts.get(c.id) ?? 0} Produkte</p>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); openEdit(c); }}
+                className="tap rounded-full hover:bg-gray-200"
+                aria-label="Bearbeiten"
+              >
+                <Pencil size={18} className="text-ink-700" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDelete(c); }}
+                className="tap rounded-full hover:bg-red-50"
+                aria-label="Löschen"
+              >
+                <Trash2 size={18} className="text-red-600" />
+              </button>
+              <ChevronRight size={18} className="text-ink-400" aria-hidden />
             </button>
           </li>
         ))}
