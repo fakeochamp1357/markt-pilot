@@ -42,16 +42,19 @@ export function PreislistePage() {
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search, 250);
-  const initialFilter: FilterKey = (() => {
+  const [filter, setFilter] = useState<FilterKey>('all');
+
+  // URL-Param ?category=<id> auslesen, sobald Kategorien geladen sind.
+  // (Bei Erst-Render sind categories noch leer, daher darf nicht initial berechnet werden.)
+  useEffect(() => {
     const raw = searchParams.get('category');
-    if (raw && /^\d+$/.test(raw)) {
+    if (raw && /^\d+$/.test(raw) && categories.length > 0) {
       const id = parseInt(raw, 10);
       const exists = categories.some((c) => c.id === id);
-      if (exists) return id;
+      if (exists && filter !== id) setFilter(id);
     }
-    return 'all';
-  })();
-  const [filter, setFilter] = useState<FilterKey>(initialFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, categories.length]);
   const [sort, setSort] = useState<SortKey>('name_asc');
   const [showSort, setShowSort] = useState(false);
 
