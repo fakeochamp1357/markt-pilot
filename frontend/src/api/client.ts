@@ -5,6 +5,8 @@ import type {
   LowStockProduct,
   Product,
   ProductListResponse,
+  Receipt,
+  ReceiptCreatePayload,
   StockMovement,
   StockMovementList,
   StockReason,
@@ -143,5 +145,47 @@ export async function listLowStock(): Promise<LowStockProduct[]> {
 
 export async function listExpiring(days = 30): Promise<ExpiringProduct[]> {
   const { data } = await api.get<ExpiringProduct[]>('/stock/expiring', { params: { days } });
+  return data;
+}
+
+// ---------- Receipts (POS) ----------
+
+/**
+ * Erstellt einen Kassenbon. Idempotent via ``clientOpId`` — derselbe
+ * Aufruf mit derselben UUID nach WLAN-Crash fuehrt nicht zu doppelten
+ * Stock-Abbuchungen.
+ */
+export async function createReceipt(
+  payload: ReceiptCreatePayload,
+  clientOpId?: string,
+): Promise<Receipt> {
+  const { data } = await api.post<Receipt>('/receipts', payload, {
+    headers: idempotencyHeader(clientOpId),
+  });
+  return data;
+}
+
+export async function listReceipts(params?: {
+  cash_session?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<Receipt[]> {
+  const { data } = await api.get<Receipt[]>('/receipts', { params });
+  return data;
+}
+
+export async function getReceipt(id: number): Promise<Receipt> {
+  const { data } = await api.get<Receipt>(`/receipts/${id}`);
+  return data;
+}
+
+export async function getReceiptByNumber(number: string): Promise<Receipt> {
+  const { data } = await api.get<Receipt>(`/receipts/by-number/${number}`);
+  return data;
+}
+
+/** Storniert einen Bon — erzeugt einen Gegenbon und stellt Bestand wieder her. */
+export async function voidReceipt(id: number): Promise<Receipt> {
+  const { data } = await api.post<Receipt>(`/receipts/${id}/void`);
   return data;
 }

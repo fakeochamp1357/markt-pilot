@@ -4,6 +4,7 @@ import { BottomTabs } from './BottomTabs';
 
 const TITLES: Record<string, string> = {
   '/': 'MarktPilot',
+  '/pos': 'Kasse',
   '/inventory': 'Warenbestand',
   '/categories': 'Kategorien',
   '/scanner': 'Scanner',

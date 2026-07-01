@@ -155,6 +155,10 @@ class ProductRead(ProductBase):
     pieces_per_pack: int
     pack_unit: str | None
     pack_barcode: str | None
+    # Preis sowohl als Decimal-String (fuer Display) als auch als int in Cent
+    # (fuer mathefreie Berechnungen im Frontend, z.B. POS-Warenkorb).
+    sell_price_cents: int
+    cost_price_cents: int
 
     @classmethod
     def from_orm_product(cls, obj) -> "ProductRead":
@@ -185,6 +189,8 @@ class ProductRead(ProductBase):
             pieces_per_pack=obj.pieces_per_pack,
             pack_unit=obj.pack_unit,
             pack_barcode=obj.pack_barcode,
+            sell_price_cents=obj.sell_price_cents,
+            cost_price_cents=obj.cost_price_cents,
         )
 
 

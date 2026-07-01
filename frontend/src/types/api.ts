@@ -33,6 +33,18 @@ export interface Product {
   version: number;
   created_at: string;
   updated_at: string;
+  /** Pfand pro Stueck (Cent), 0 wenn keins. */
+  deposit_cents: number;
+  /** > 1 = wird in Packungen eingekauft (z.B. Vimto 24er-Tray). */
+  pieces_per_pack: number;
+  /** Einheit der Packung, z.B. "Tray" oder "Karton" (optional). */
+  pack_unit: string | null;
+  /** Barcode der Packung (optional, kann != barcode sein). */
+  pack_barcode: string | null;
+  /** VK in Cent — fuer mathefreie Cart-Berechnungen auf Pi. */
+  sell_price_cents: number;
+  /** EK in Cent (fuer Margenanzeige). */
+  cost_price_cents: number;
 }
 
 export interface ProductListResponse {
@@ -94,3 +106,62 @@ export type SortKey =
 
 export const UNITS = ['Stück', 'kg', 'g', 'l', 'ml', 'Packung', 'Box', 'm'] as const;
 export type Unit = (typeof UNITS)[number];
+
+// ----------------------------------------------------------------
+// Receipt / POS
+// ----------------------------------------------------------------
+
+export type ReceiptKind = 'sale' | 'storno' | 'return';
+export type ReceiptLineKind = 'sale' | 'deposit' | 'return' | 'storno';
+export type PaymentMethod = 'cash' | 'card' | 'mixed';
+
+export interface ReceiptLine {
+  id: number;
+  position: number;
+  kind: ReceiptLineKind;
+  product_id: number | null;
+  name_snapshot: string;
+  unit_snapshot: string;
+  quantity: string;
+  unit_price_cents: number;
+  line_total_cents: number;
+  comment: string | null;
+}
+
+export interface Receipt {
+  id: number;
+  receipt_number: string;
+  kind: ReceiptKind;
+  original_receipt_id: number | null;
+  cash_session: string;
+  payment_method: PaymentMethod;
+  tendered_cents: number;
+  change_cents: number;
+  total_cents: number;
+  cashier_name: string | null;
+  notes: string | null;
+  created_at: string;
+  lines: ReceiptLine[];
+}
+
+export interface ReceiptCreatePayload {
+  kind?: ReceiptKind;
+  original_receipt_id?: number | null;
+  cash_session: string;
+  payment_method: PaymentMethod;
+  tendered_cents?: number;
+  change_cents?: number;
+  total_cents: number;
+  cashier_name?: string | null;
+  notes?: string | null;
+  lines: {
+    kind: ReceiptLineKind;
+    product_id: number | null;
+    name_snapshot: string;
+    unit_snapshot: string;
+    quantity: string;
+    unit_price_cents: number;
+    line_total_cents: number;
+    comment?: string | null;
+  }[];
+}

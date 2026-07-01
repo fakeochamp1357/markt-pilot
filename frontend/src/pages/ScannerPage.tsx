@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, CameraOff, KeyboardIcon } from 'lucide-react';
+import { Camera, CameraOff, KeyboardIcon, ShoppingCart, Check } from 'lucide-react';
 import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser';
 import { BottomSheet } from '@/components/BottomSheet';
 import { ProductForm } from '@/components/ProductForm';
 import { useMarketData } from '@/hooks/useData';
 import { useAppStore } from '@/store';
+import { useCartStore } from '@/store/cart';
 import { getProductByBarcode } from '@/api/client';
 import { cacheProducts, enqueueOutbox } from '@/db/dexie';
 import { createProduct, listProducts } from '@/api/client';
 import { refreshOutboxCountNow } from '@/hooks/useOutboxSync';
+import { formatPriceCents } from '@/utils/format';
 import type { Product } from '@/types/api';
 
 export function ScannerPage() {
   const { categories, refresh } = useMarketData();
   const isOnline = useAppStore((s) => s.isOnline);
+  const addToCart = useCartStore((s) => s.addProduct);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
   const [active, setActive] = useState(false);
@@ -22,6 +25,7 @@ export function ScannerPage() {
   const [manual, setManual] = useState(false);
   const [manualValue, setManualValue] = useState('');
   const [foundProduct, setFoundProduct] = useState<Product | null>(null);
+  const [addedFlash, setAddedFlash] = useState(false);
   const [prefillBarcode, setPrefillBarcode] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
 
@@ -30,7 +34,7 @@ export function ScannerPage() {
     try {
       const reader = new BrowserMultiFormatReader();
       if (!videoRef.current) return;
-      const controls = await reader.decodeFromVideoDevice(undefined, videoRef.current, (result, err) => {
+      const controls = await reader.decodeFromVideoDevice(undefined, videoRef.current, (result, _err) => {
         if (result) {
           const text = result.getText();
           setLastHit(text);
@@ -60,10 +64,9 @@ export function ScannerPage() {
     try {
       const product = await getProductByBarcode(code);
       setFoundProduct(product);
-      stop();
+      // Kamera weiterlaufen lassen — Cashier kann direkt weiter scannen.
     } catch {
       // Miss
-      stop();
       setPrefillBarcode(code);
       setShowNew(true);
     }
@@ -77,15 +80,25 @@ export function ScannerPage() {
     setManual(false);
   };
 
+  const onAddToCart = (p: Product) => {
+    addToCart(p, '1');
+    setFoundProduct(null);
+    setLastHit(p.barcode ?? null);
+    setAddedFlash(true);
+    window.setTimeout(() => setAddedFlash(false), 1500);
+  };
+
   const onProductCreated = async (payload: Partial<Product>) => {
     if (!isOnline) {
       await enqueueOutbox({ kind: 'product.create', payload });
       await refreshOutboxCountNow();
     } else {
-      await createProduct(payload);
+      const created = await createProduct(payload);
+      const fresh = await listProducts({ limit: 500 });
+      await cacheProducts(fresh.items);
+      // Direkt in den Warenkorb, damit der Cashier nicht zur Kasse muss.
+      addToCart(created, '1');
     }
-    const fresh = await listProducts({ limit: 500 });
-    await cacheProducts(fresh.items);
     setShowNew(false);
     setPrefillBarcode(null);
     await refresh();
@@ -127,10 +140,18 @@ export function ScannerPage() {
                 <Camera size={48} className="mb-2 opacity-70" />
                 <p className="font-semibold">Bereit zum Scannen</p>
                 <p className="text-xs opacity-80 mt-1">
-                  Halte den Barcode in den Rahmen.
+                  Scannt direkt in den Warenkorb.
                 </p>
               </>
             )}
+          </div>
+        )}
+        {addedFlash && (
+          <div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center bg-emerald-500/30 transition-opacity"
+            aria-live="polite"
+          >
+            <Check size={64} className="text-white drop-shadow-md" />
           </div>
         )}
       </div>
@@ -138,11 +159,11 @@ export function ScannerPage() {
       <div className="flex gap-2">
         {active ? (
           <button type="button" onClick={stop} className="btn-secondary flex-1">
-            <CameraOff size={18} className="inline mr-1" /> Stop
+            <CameraOff size={18} /> Kamera stoppen
           </button>
         ) : (
           <button type="button" onClick={start} className="btn-primary flex-1">
-            <Camera size={18} className="inline mr-1" /> Kamera starten
+            <Camera size={18} /> Kamera starten
           </button>
         )}
         <button type="button" onClick={() => setManual((v) => !v)} className="btn-secondary">
@@ -180,15 +201,36 @@ export function ScannerPage() {
       >
         {foundProduct && (
           <div className="space-y-3">
-            <div className="rounded-xl bg-gray-50 p-3">
+            <div className="rounded-xl bg-[color:var(--bg-page)] p-3">
               <p className="text-lg font-bold">{foundProduct.name}</p>
-              <p className="text-sm text-ink-600">{foundProduct.unit} · Menge {foundProduct.stock_quantity}</p>
-              {foundProduct.barcode && (
-                <p className="text-xs text-ink-500 mt-1 font-mono">{foundProduct.barcode}</p>
+              <p className="text-sm text-[color:var(--text-secondary)]">
+                {foundProduct.unit}
+                {foundProduct.size_weight ? ` · ${foundProduct.size_weight}` : ''}
+              </p>
+              <p className="mt-2 text-2xl font-bold">{formatPriceCents(foundProduct.sell_price_cents)}</p>
+              {foundProduct.deposit_cents > 0 && (
+                <p className="mt-1 text-xs text-[color:var(--text-muted)]">
+                  + {formatPriceCents(foundProduct.deposit_cents)} Pfand
+                </p>
               )}
+              <p className="mt-2 text-xs text-[color:var(--text-muted)]">
+                Bestand: {foundProduct.stock_quantity}
+              </p>
             </div>
-            <button type="button" className="btn-primary w-full" onClick={() => setFoundProduct(null)}>
-              Schließen
+            <button
+              type="button"
+              onClick={() => onAddToCart(foundProduct)}
+              className="btn btn-primary btn-lg w-full"
+            >
+              <ShoppingCart size={18} />
+              In den Warenkorb
+            </button>
+            <button
+              type="button"
+              onClick={() => setFoundProduct(null)}
+              className="btn btn-ghost btn-sm w-full"
+            >
+              Überspringen
             </button>
           </div>
         )}
@@ -203,7 +245,7 @@ export function ScannerPage() {
         title="Neues Produkt anlegen?"
         maxHeight="95vh"
       >
-        <p className="text-sm text-ink-600 mb-3">
+        <p className="text-sm text-[color:var(--text-secondary)] mb-3">
           Kein Produkt mit Barcode <span className="font-mono">{prefillBarcode}</span> gefunden.
           Lege es jetzt an:
         </p>
@@ -211,7 +253,7 @@ export function ScannerPage() {
           defaultBarcode={prefillBarcode ?? undefined}
           categories={categories}
           onSubmit={onProductCreated}
-          submitLabel="Anlegen"
+          submitLabel="Anlegen &amp; in Warenkorb"
         />
       </BottomSheet>
     </div>
