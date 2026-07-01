@@ -9,17 +9,89 @@
     height: 100%;
   }
 
+  /* ----------------------------------------------------------------
+   * Theme-Variablen
+   * ----------------------------------------------------------------
+   * Light-Modus: aktuelles Erscheinungsbild (Weiß / Blau-Akzent).
+   * Dark-Modus : schwarz + futuristisches Lila (purple-500/600).
+   *
+   * Wenn die Klasse ``dark`` an ``<html>`` haengt, werden die
+   * :root-Werte mit den .dark-Werten ueberschrieben.
+   * ---------------------------------------------------------------- */
+  :root {
+    --bg-page: #f9fafb;          /* gray-50 */
+    --bg-card: #ffffff;
+    --bg-elevated: #ffffff;
+    --bg-input: #ffffff;
+    --bg-header: #1f2937;        /* ink-800 */
+    --bg-bottom-tabs: #ffffff;
+    --bg-hover: #f3f4f6;         /* gray-100 */
+    --bg-active: #e5e7eb;        /* gray-200 */
+    --bg-brand-tint: #eff6ff;    /* brand-50 */
+
+    --text-primary: #111827;     /* ink-900 */
+    --text-secondary: #4b5563;   /* ink-600 */
+    --text-muted: #6b7280;       /* ink-500 */
+    --text-faint: #9ca3af;       /* gray-400 */
+    --text-on-accent: #ffffff;
+    --text-on-header: #ffffff;
+
+    --accent: #3b82f6;           /* brand-500 */
+    --accent-strong: #2563eb;    /* brand-600 */
+    --accent-darker: #1d4ed8;    /* brand-700 */
+    --accent-tint: #dbeafe;      /* brand-100 */
+    --accent-tint-2: #eff6ff;    /* brand-50 */
+
+    --border: #f3f4f6;           /* gray-100 */
+    --border-strong: #e5e7eb;   /* gray-200 */
+    --border-input: #e5e7eb;     /* gray-200 */
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-sheet: 0 -8px 24px rgba(0, 0, 0, 0.12);
+    --shadow-accent: 0 0 0 0 rgba(0, 0, 0, 0);
+
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+
+  .dark {
+    --bg-page: #08080d;          /* fast schwarz, leichter Blaustich */
+    --bg-card: #13131c;
+    --bg-elevated: #1a1a26;
+    --bg-input: #16161f;
+    --bg-header: #0a0a12;
+    --bg-bottom-tabs: #0c0c14;
+    --bg-hover: #1f1f2c;
+    --bg-active: #2a2a3a;
+    --bg-brand-tint: #1c0a2e;    /* purple-tint statt blue-tint */
+
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+    --text-faint: #4b5563;
+    --text-on-accent: #ffffff;
+    --text-on-header: #f3f4f6;
+
+    --accent: #a855f7;           /* purple-500 — futuristisches Lila */
+    --accent-strong: #9333ea;    /* purple-600 */
+    --accent-darker: #7e22ce;    /* purple-700 */
+    --accent-tint: #3b0764;      /* purple-950-ish */
+    --accent-tint-2: #1c0a2e;    /* purple-950 lighter */
+
+    --border: #2a2a3a;
+    --border-strong: #3a3a4a;
+    --border-input: #3a3a4a;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-sheet: 0 -8px 24px rgba(0, 0, 0, 0.6);
+    --shadow-accent: 0 0 20px rgba(168, 85, 247, 0.25);
+  }
+
   body {
     @apply bg-gray-50 text-ink-900 antialiased;
     font-size: 16px;
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
-  }
-
-  /* iOS-Style Tab Bar Höhe */
-  :root {
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-top: env(safe-area-inset-top, 0px);
   }
 
   input,
@@ -40,23 +112,58 @@
     @apply min-h-tap min-w-tap inline-flex items-center justify-center;
   }
 
+  /* ----------------------------------------------------------------
+   * Komponenten-Klassen benutzen die CSS-Variablen, sodass ein
+   * Klassen-Toggle auf <html> die gesamte UI umfaerbt.
+   * ---------------------------------------------------------------- */
   .card {
-    @apply bg-white rounded-2xl shadow-card border border-gray-100;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
   }
 
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium border
-           border-gray-200 bg-white text-ink-700 active:bg-gray-100 transition-colors;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 9999px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid var(--border-strong);
+    background-color: var(--bg-card);
+    color: var(--text-primary);
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+  }
+  .chip:active {
+    background-color: var(--bg-active);
   }
 
   .chip-active {
-    @apply bg-brand-600 text-white border-brand-600;
+    background-color: var(--accent-strong);
+    color: var(--text-on-accent);
+    border-color: var(--accent-strong);
   }
 
   .input {
-    @apply w-full min-h-tap rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-base
-           placeholder:text-ink-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-200
-           focus:outline-none;
+    width: 100%;
+    min-height: 44px;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-input);
+    background-color: var(--bg-input);
+    color: var(--text-primary);
+    padding: 0.625rem 0.75rem;
+    font-size: 1rem;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+  }
+  .input::placeholder {
+    color: var(--text-muted);
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-tint);
   }
 
   .btn {
@@ -64,11 +171,27 @@
   }
 
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-700;
+    background-color: var(--accent-strong);
+    color: var(--text-on-accent);
+    box-shadow: var(--shadow-accent);
+  }
+  .btn-primary:hover {
+    background-color: var(--accent-darker);
+  }
+  .btn-primary:active {
+    background-color: var(--accent-darker);
   }
 
   .btn-secondary {
-    @apply btn bg-white border border-gray-200 text-ink-800 hover:bg-gray-50 active:bg-gray-100;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    color: var(--text-primary);
+  }
+  .btn-secondary:hover {
+    background-color: var(--bg-hover);
+  }
+  .btn-secondary:active {
+    background-color: var(--bg-active);
   }
 
   .btn-danger {
@@ -76,15 +199,28 @@
   }
 
   .label {
-    @apply block text-sm font-medium text-ink-700 mb-1;
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
   }
 
   .badge-offline {
-    @apply inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 9999px;
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
   }
 
   .price-big {
-    @apply font-bold text-ink-900;
+    font-weight: 700;
+    color: var(--text-primary);
     font-size: 22px;
     line-height: 1.1;
   }
@@ -98,6 +234,177 @@
   .pt-safe {
     padding-top: calc(0.5rem + var(--safe-top));
   }
+}
+
+/* ----------------------------------------------------------------
+ * Dark-Mode-Override fuer inline Tailwind-Klassen
+ * ----------------------------------------------------------------
+ * Statt jede Komponente mit ``dark:``-Varianten zu bekleben,
+ * ueberschreiben wir hier die haeufigsten hartcodierten Farben.
+ * Komponenten, die ``bg-white``, ``bg-gray-50``, ``text-ink-900``
+ * etc. direkt nutzen, werden so automatisch mit umgeschaltet.
+ * ---------------------------------------------------------------- */
+.dark body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+.dark .bg-white {
+  background-color: var(--bg-card);
+}
+.dark .bg-gray-50 {
+  background-color: var(--bg-hover);
+}
+.dark .bg-gray-100 {
+  background-color: var(--bg-hover);
+}
+.dark .bg-gray-200 {
+  background-color: var(--bg-active);
+}
+.dark .hover\:bg-gray-50:hover {
+  background-color: var(--bg-hover);
+}
+.dark .hover\:bg-gray-100:hover {
+  background-color: var(--bg-hover);
+}
+.dark .hover\:bg-gray-200:hover {
+  background-color: var(--bg-active);
+}
+.dark .active\:bg-gray-50:active {
+  background-color: var(--bg-hover);
+}
+.dark .active\:bg-gray-100:active {
+  background-color: var(--bg-active);
+}
+
+.dark .text-ink-900 {
+  color: var(--text-primary);
+}
+.dark .text-ink-700 {
+  color: var(--text-primary);
+}
+.dark .text-ink-600 {
+  color: var(--text-secondary);
+}
+.dark .text-ink-500 {
+  color: var(--text-muted);
+}
+.dark .text-ink-400 {
+  color: var(--text-faint);
+}
+
+.dark .border-gray-100 {
+  border-color: var(--border);
+}
+.dark .border-gray-200 {
+  border-color: var(--border-strong);
+}
+
+/* Brand-Akzent im Dark-Modus: Lila statt Blau */
+.dark .bg-brand-50 {
+  background-color: var(--bg-brand-tint);
+  color: var(--accent);
+}
+.dark .bg-brand-100 {
+  background-color: var(--accent-tint-2);
+}
+.dark .bg-brand-600 {
+  background-color: var(--accent-strong);
+}
+.dark .bg-brand-700 {
+  background-color: var(--accent-darker);
+}
+.dark .hover\:bg-brand-700:hover {
+  background-color: var(--accent-darker);
+}
+.dark .active\:bg-brand-700:active {
+  background-color: var(--accent-darker);
+}
+.dark .text-brand-600 {
+  color: var(--accent);
+}
+.dark .text-brand-700 {
+  color: var(--accent);
+}
+.dark .text-brand-800 {
+  color: var(--accent);
+}
+.dark .text-brand-900 {
+  color: var(--accent);
+}
+.dark .border-brand-100 {
+  border-color: var(--accent-tint);
+}
+.dark .border-brand-600 {
+  border-color: var(--accent-strong);
+}
+.dark .border-ink-900 {
+  border-color: var(--text-primary);
+}
+
+/* Status-Farben — knalliger in Dark, damit sie auf Schwarz noch lesen */
+.dark .text-amber-700 {
+  color: #fcd34d;
+}
+.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.08);
+}
+.dark .border-amber-200 {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+.dark .text-amber-800 {
+  color: #fcd34d;
+}
+.dark .bg-emerald-500\/20 {
+  background-color: rgba(16, 185, 129, 0.2);
+}
+.dark .text-emerald-200 {
+  color: #6ee7b7;
+}
+.dark .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.15);
+}
+.dark .text-emerald-700 {
+  color: #6ee7b7;
+}
+.dark .bg-rose-100 {
+  background-color: rgba(244, 63, 94, 0.15);
+}
+.dark .text-rose-700 {
+  color: #fda4af;
+}
+.dark .bg-red-500\/20 {
+  background-color: rgba(239, 68, 68, 0.2);
+}
+.dark .text-red-200 {
+  color: #fecaca;
+}
+.dark .hover\:bg-red-50:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Schatten im Dark-Modus etwas weicher, damit Karten nicht "kleben" */
+.dark .shadow-card {
+  box-shadow: var(--shadow-card);
+}
+.dark .shadow-sheet {
+  box-shadow: var(--shadow-sheet);
+}
+.dark .shadow-xl {
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.15);
+}
+
+/* Header / Bottom-Tabs: bleiben im Dark-Modus ihre eigenen Farben */
+.dark .bg-ink-800 {
+  background-color: var(--bg-header);
+}
+.dark .shadow-md {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Bottom-Sheet: soll im Dark-Modus den elevated-Hintergrund haben */
+.dark .bg-white[class*="rounded-"] {
+  background-color: var(--bg-elevated);
 }
 
 /* Sheet-Animation */

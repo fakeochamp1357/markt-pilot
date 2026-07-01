@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Database, FileDown, Info, Trash2, RefreshCw, CheckCircle2, CloudOff, WifiOff } from 'lucide-react';
+import { Database, FileDown, Info, Trash2, RefreshCw, CheckCircle2, CloudOff, WifiOff, Settings } from 'lucide-react';
 import { listOutbox } from '@/db/dexie';
 import { resetFailedOutboxEntries, syncOutboxOnce } from '@/hooks/useOutboxSync';
 import { useAppStore } from '@/store';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 function statusLabel(
   isOnline: boolean,
@@ -90,6 +91,17 @@ export function MorePage() {
           Setzt fehlgeschlagene Einträge zurück und versucht erneut.
         </p>
         {info && <p className="mt-2 text-xs text-ink-600">{info}</p>}
+      </Section>
+
+      <Section icon={<Settings />} title="Einstellungen">
+        <div>
+          <p className="label !mb-2">Farbschema</p>
+          <ThemeToggle />
+          <p className="mt-2 text-xs text-ink-500">
+            „System" folgt der OS-Einstellung. „Dunkel" ist schwarz mit
+            futuristischem Lila.
+          </p>
+        </div>
       </Section>
 
       <Section icon={<Database />} title="Daten">

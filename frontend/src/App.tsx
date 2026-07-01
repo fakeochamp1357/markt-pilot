@@ -6,8 +6,12 @@ import { CategoriesPage } from '@/pages/CategoriesPage';
 import { ScannerPage } from '@/pages/ScannerPage';
 import { MorePage } from '@/pages/MorePage';
 import { useOutboxSync } from '@/hooks/useOutboxSync';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function App() {
+  // Theme muss VOR dem ersten Render wirken (sonst blitzt das helle
+  // Schema kurz auf). useOutboxSync mounted den Health-Hook.
+  useTheme();
   useOutboxSync();
   return (
     <Routes>

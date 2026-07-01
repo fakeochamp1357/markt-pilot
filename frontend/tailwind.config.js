@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     // Mobile-first defaults
@@ -11,6 +12,9 @@ export default {
     },
     extend: {
       colors: {
+        // Brand-Akzent: Blau (Hell) bzw. futuristisches Lila (Dunkel).
+        // Im Light-Modus bleibt alles wie vorher; im Dark-Modus wird die
+        // Brand-Familie ueberschrieben (siehe index.css `.dark .bg-brand-600`).
         brand: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -19,6 +23,13 @@ export default {
           600: '#2563eb',
           700: '#1d4ed8',
           900: '#1e3a8a',
+        },
+        // "Neon" / Dark-Mode-Akzent — wird in .dark ueberschrieben
+        neon: {
+          400: '#c084fc',
+          500: '#a855f7',
+          600: '#9333ea',
+          700: '#7e22ce',
         },
         ink: {
           900: '#111827',
