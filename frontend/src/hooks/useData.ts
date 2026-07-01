@@ -15,6 +15,7 @@ import {
   listProducts,
 } from '@/api/client';
 import type { Category, Product, StockMovement } from '@/types/api';
+import { useAppStore } from '@/store';
 
 interface DataState {
   products: Product[];
@@ -23,6 +24,20 @@ interface DataState {
   loading: boolean;
   fromCache: boolean;
   refresh: () => Promise<void>;
+}
+
+/**
+ * Lade-Strategie:
+ * 1) Cache first → instant render
+ * 2) Background refresh, falls das Backend *eigentlich* erreichbar sein
+ *    sollte (also nicht explizit "unreachable"). ``null`` heißt "noch
+ *    nicht geprüft" → wir versuchen es einmal.
+ */
+function shouldTryNetwork(): boolean {
+  const { backendReachable, isOnline } = useAppStore.getState();
+  if (isOnline === false) return false;
+  if (backendReachable === false) return false;
+  return true;
 }
 
 export function useMarketData(): DataState {
@@ -48,7 +63,7 @@ export function useMarketData(): DataState {
     if (cachedM.length > 0) setMovements(cachedM);
 
     // 2) Background network refresh.
-    if (navigator.onLine) {
+    if (shouldTryNetwork()) {
       try {
         const [prods, cats, movs] = await Promise.all([
           listProducts({ limit: 500 }),
@@ -86,7 +101,7 @@ export function useStockKpis() {
   const [low, setLow] = useState(0);
   const [expiring, setExpiring] = useState(0);
   const refresh = async () => {
-    if (!navigator.onLine) return;
+    if (!shouldTryNetwork()) return;
     try {
       const [l, e] = await Promise.all([listLowStock(), listExpiring(30)]);
       setLow(l.length);

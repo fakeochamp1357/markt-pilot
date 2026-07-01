@@ -1,23 +1,51 @@
 import { useState } from 'react';
-import { Database, FileDown, Info, Trash2, RefreshCw } from 'lucide-react';
+import { Database, FileDown, Info, Trash2, RefreshCw, CheckCircle2, CloudOff, WifiOff } from 'lucide-react';
 import { listOutbox } from '@/db/dexie';
-import { syncOutboxOnce } from '@/hooks/useOutboxSync';
+import { resetFailedOutboxEntries, syncOutboxOnce } from '@/hooks/useOutboxSync';
 import { useAppStore } from '@/store';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
+function statusLabel(
+  isOnline: boolean,
+  backendReachable: boolean | null,
+): { text: string; tone: 'good' | 'warn' | 'bad'; icon: React.ReactNode } {
+  if (!isOnline) {
+    return { text: 'Browser offline', tone: 'bad', icon: <WifiOff size={14} /> };
+  }
+  if (backendReachable === false) {
+    return { text: 'Kein Backend (WLAN evtl. tot)', tone: 'bad', icon: <CloudOff size={14} /> };
+  }
+  if (backendReachable === null) {
+    return { text: 'Prüfe Backend …', tone: 'warn', icon: <RefreshCw size={14} /> };
+  }
+  return { text: 'Online', tone: 'good', icon: <CheckCircle2 size={14} /> };
+}
+
+const TONE_CLASSES: Record<'good' | 'warn' | 'bad', string> = {
+  good: 'text-emerald-600',
+  warn: 'text-amber-600',
+  bad: 'text-red-600',
+};
+
 export function MorePage() {
   const isOnline = useOnlineStatus();
+  const backendReachable = useAppStore((s) => s.backendReachable);
   const outboxCount = useAppStore((s) => s.outboxCount);
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
+  const status = statusLabel(isOnline, backendReachable);
 
   const handleSync = async () => {
     setBusy(true);
     setInfo(null);
     try {
       const queue = await listOutbox();
+      const resetted = await resetFailedOutboxEntries();
       const res = await syncOutboxOnce();
-      setInfo(`Verarbeitet: ${res.processed}, Fehler: ${res.failed}, vorher in Outbox: ${queue.length}`);
+      setInfo(
+        `Verarbeitet: ${res.processed}, Fehler: ${res.failed}, ` +
+          `vorher in Outbox: ${queue.length}, davon reaktiviert: ${resetted}.`,
+      );
     } catch (e) {
       setInfo(e instanceof Error ? e.message : 'Sync fehlgeschlagen');
     } finally {
@@ -37,7 +65,15 @@ export function MorePage() {
   return (
     <div className="px-4 pt-3 space-y-3">
       <Section icon={<Info />} title="Status">
-        <Row label="Verbindung">{isOnline ? 'online' : 'offline'}</Row>
+        <Row label="Verbindung">
+          <span className={`inline-flex items-center gap-1 ${TONE_CLASSES[status.tone]}`}>
+            {status.icon} {status.text}
+          </span>
+        </Row>
+        <Row label="Browser online">{isOnline ? 'ja' : 'nein'}</Row>
+        <Row label="Backend erreichbar">
+          {backendReachable === null ? 'noch nicht geprüft' : backendReachable ? 'ja' : 'nein'}
+        </Row>
         <Row label="Offene Änderungen">{outboxCount}</Row>
       </Section>
 
@@ -50,6 +86,9 @@ export function MorePage() {
         >
           {busy ? 'Synchronisiere …' : 'Jetzt synchronisieren'}
         </button>
+        <p className="mt-2 text-xs text-ink-500">
+          Setzt fehlgeschlagene Einträge zurück und versucht erneut.
+        </p>
         {info && <p className="mt-2 text-xs text-ink-600">{info}</p>}
       </Section>
 

@@ -3,6 +3,7 @@
  */
 import Dexie, { type Table } from 'dexie';
 import type { Category, Product, StockMovement } from '@/types/api';
+import { newUuid } from '@/utils/uuid';
 
 export interface CachedProduct {
   id: number;
@@ -43,6 +44,13 @@ export type OutboxOp =
 export interface OutboxEntry {
   id?: number;
   op: OutboxOp;
+  /**
+   * Client-seitige Idempotenz-UUID (nur für create-artige Ops gesetzt).
+   * Wird beim POST als ``X-Client-Op-Id``-Header mitgeschickt. Das Backend
+   * cached die erste Antwort unter dieser ID; ein Retry nach WLAN-Crash
+   * erzeugt damit **kein** Duplikat.
+   */
+  client_op_id?: string;
   created_at: number;
   attempts: number;
   last_error?: string;
@@ -107,13 +115,31 @@ export async function readCachedMovements(): Promise<StockMovement[]> {
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 }
 
-export async function enqueueOutbox(op: OutboxOp): Promise<number> {
-  return db.outbox.add({
+/** Op-Kinds, die einen serverseitigen POST erzeugen und damit eine
+ * Idempotenz-UUID benötigen. PUTs und DELETEs sind per HTTP-Semantik
+ * idempotent und brauchen keine. */
+const CREATE_KINDS: ReadonlySet<OutboxOp['kind']> = new Set<OutboxOp['kind']>([
+  'product.create',
+  'category.create',
+  'stock.movement',
+]);
+
+export interface EnqueueResult {
+  id: number;
+  /** Die für diesen Eintrag generierte Idempotenz-UUID (nur bei Create-Ops). */
+  clientOpId: string | null;
+}
+
+export async function enqueueOutbox(op: OutboxOp): Promise<EnqueueResult> {
+  const clientOpId = CREATE_KINDS.has(op.kind) ? newUuid() : undefined;
+  const id = await db.outbox.add({
     op,
+    client_op_id: clientOpId,
     created_at: Date.now(),
     attempts: 0,
     status: 'pending',
   });
+  return { id: Number(id), clientOpId: clientOpId ?? null };
 }
 
 export async function listOutbox(): Promise<OutboxEntry[]> {

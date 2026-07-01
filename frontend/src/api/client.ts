@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance } from 'axios';
+import axios, { type AxiosInstance, type RawAxiosRequestHeaders } from 'axios';
 import type {
   Category,
   ExpiringProduct,
@@ -11,12 +11,29 @@ import type {
 } from '@/types/api';
 
 const BASE_URL = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000/api';
+/** Basis-URL ohne den ``/api``-Pfad — für Health-Checks etc. */
+export const ROOT_URL: string = (() => {
+  const base = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000/api';
+  return base.replace(/\/api\/?$/, '');
+})();
 
 export const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 });
+
+/** Axios-Instanz mit kurzem Timeout — für Health-Pings. */
+export const healthApi: AxiosInstance = axios.create({
+  baseURL: ROOT_URL,
+  timeout: 2500,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+/** Header-Konstruktor: hängt X-Client-Op-Id an, wenn vorhanden. */
+function idempotencyHeader(clientOpId: string | undefined): RawAxiosRequestHeaders {
+  return clientOpId ? { 'X-Client-Op-Id': clientOpId } : {};
+}
 
 // ---------- Products ----------
 export async function listProducts(params?: {
@@ -40,8 +57,13 @@ export async function getProductByBarcode(code: string): Promise<Product> {
   return data;
 }
 
-export async function createProduct(payload: Partial<Product>): Promise<Product> {
-  const { data } = await api.post<Product>('/products', payload);
+export async function createProduct(
+  payload: Partial<Product>,
+  clientOpId?: string,
+): Promise<Product> {
+  const { data } = await api.post<Product>('/products', payload, {
+    headers: idempotencyHeader(clientOpId),
+  });
   return data;
 }
 
@@ -61,13 +83,18 @@ export async function listCategories(): Promise<Category[]> {
   return data;
 }
 
-export async function createCategory(payload: {
-  name: string;
-  color: string;
-  sort_order?: number;
-  parent_id?: number | null;
-}): Promise<Category> {
-  const { data } = await api.post<Category>('/categories', payload);
+export async function createCategory(
+  payload: {
+    name: string;
+    color: string;
+    sort_order?: number;
+    parent_id?: number | null;
+  },
+  clientOpId?: string,
+): Promise<Category> {
+  const { data } = await api.post<Category>('/categories', payload, {
+    headers: idempotencyHeader(clientOpId),
+  });
   return data;
 }
 
@@ -84,14 +111,19 @@ export async function deleteCategory(id: number): Promise<void> {
 }
 
 // ---------- Stock ----------
-export async function createStockMovement(payload: {
-  product_id: number;
-  change: number;
-  reason: StockReason;
-  reference?: string;
-  created_by?: string;
-}): Promise<StockMovement> {
-  const { data } = await api.post<StockMovement>('/stock/movements', payload);
+export async function createStockMovement(
+  payload: {
+    product_id: number;
+    change: number;
+    reason: StockReason;
+    reference?: string;
+    created_by?: string;
+  },
+  clientOpId?: string,
+): Promise<StockMovement> {
+  const { data } = await api.post<StockMovement>('/stock/movements', payload, {
+    headers: idempotencyHeader(clientOpId),
+  });
   return data;
 }
 

@@ -1,4 +1,4 @@
-import { WifiOff, RefreshCw } from 'lucide-react';
+import { WifiOff, RefreshCw, CloudOff, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '@/store';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -11,7 +11,16 @@ interface HeaderProps {
 
 export function Header({ title, right }: HeaderProps) {
   const isOnline = useOnlineStatus();
+  const backendReachable = useAppStore((s) => s.backendReachable);
   const outboxCount = useAppStore((s) => s.outboxCount);
+
+  // Drei unterscheidbare Zustaende:
+  //  - browser offline          → "Offline"
+  //  - browser online, backend weg → "Kein Backend"
+  //  - alles gut                 → nichts anzeigen (oder dezent "Online")
+  const showOffline = isOnline === false;
+  const showBackendDown = isOnline === true && backendReachable === false;
+  const showHealthy = isOnline === true && backendReachable === true;
 
   return (
     <header className="sticky top-0 z-20 bg-ink-800 text-white pt-safe pb-3 px-4 shadow-md">
@@ -20,9 +29,26 @@ export function Header({ title, right }: HeaderProps) {
           <span className="text-xl font-bold tracking-tight">{title}</span>
         </Link>
         <div className="flex items-center gap-2">
-          {!isOnline && (
-            <span className="badge-offline" aria-live="polite">
+          {showOffline && (
+            <span className="badge-offline" aria-live="polite" title="Kein Netzwerk-Interface aktiv">
               <WifiOff size={14} /> Offline
+            </span>
+          )}
+          {showBackendDown && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-semibold text-red-200"
+              aria-live="polite"
+              title="Browser online, aber Backend nicht erreichbar"
+            >
+              <CloudOff size={12} /> Kein Backend
+            </span>
+          )}
+          {showHealthy && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-200"
+              title="Backend erreichbar"
+            >
+              <CheckCircle2 size={12} /> Online
             </span>
           )}
           {outboxCount > 0 && (
