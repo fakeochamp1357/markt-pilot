@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Search, SlidersHorizontal, ArrowUpDown, RefreshCcw, X } from 'lucide-react';
+import { Plus, Search, SlidersHorizontal, ArrowUpDown, RefreshCcw, X, Pencil, Boxes, Trash2 } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductForm } from '@/components/ProductForm';
@@ -384,30 +384,34 @@ export function PreislistePage() {
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn btn-secondary btn-sm"
                 onClick={() => {
                   setEditSheet(actionSheet);
                   setActionSheet(null);
                 }}
               >
-                Bearbeiten
+                <Pencil size={14} />
+                <span>Bearbeiten</span>
               </button>
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn btn-secondary btn-sm"
                 onClick={() => {
                   setStockSheet(actionSheet);
                   setActionSheet(null);
                 }}
               >
-                Bestand
+                <Boxes size={14} />
+                <span>Bestand</span>
               </button>
               <button
                 type="button"
-                className="btn-danger"
                 onClick={onDelete}
+                className="btn btn-sm border border-red-500/40 bg-transparent text-red-500 hover:bg-red-500/10 active:bg-red-500/20"
+                aria-label="Produkt löschen"
               >
-                Löschen
+                <Trash2 size={14} />
+                <span>Löschen</span>
               </button>
             </div>
             {outboxCount > 0 && (

@@ -6,7 +6,7 @@
  * - keine schweren Animationen
  * - Total wird lokal gerundet, Server validiert nochmal
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plus, Minus, Trash2, ShoppingCart, ScanLine, X, Search } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { useMarketData } from '@/hooks/useData';
@@ -88,17 +88,21 @@ export function POSPage() {
       };
 
       const opId = checkoutClientOpId ?? newCheckoutOpId();
+      // eslint-disable-next-line no-console
+      console.log('[POS] checkout start', { totalCents: payload.total_cents, lines: payload.lines.length, opId });
       const receipt = await createReceipt(payload, opId);
+      // eslint-disable-next-line no-console
+      console.log('[POS] checkout success', receipt.receipt_number, 'id=', receipt.id);
       setLastReceipt(receipt);
       setPayOpen(false);
       clearCart();
       await refresh();
     } catch (e) {
-      setErrorMsg(
-        e instanceof Error
-          ? e.message
-          : 'Bezahlvorgang fehlgeschlagen — bitte erneut versuchen.'
-      );
+      // eslint-disable-next-line no-console
+      console.error('[POS] checkout failed', e);
+      const msg =
+        e instanceof Error ? e.message : 'Bezahlvorgang fehlgeschlagen.';
+      setErrorMsg(`${msg} (Bon wurde NICHT gebucht — versuche es erneut oder pruefe das Backend.)`);
     } finally {
       setBusy(false);
     }
@@ -314,6 +318,8 @@ export function POSPage() {
         onConfirm={onConfirmCheckout}
         totalCents={grandTotal}
         busy={busy}
+        errorMsg={errorMsg}
+        onClearError={() => setErrorMsg(null)}
       />
 
       {/* Receipt View (nach erfolgreichem Checkout) */}
@@ -337,9 +343,11 @@ interface PaymentSheetProps {
   }) => Promise<void> | void;
   totalCents: number;
   busy: boolean;
+  errorMsg: string | null;
+  onClearError: () => void;
 }
 
-function PaymentSheet({ open, onClose, onConfirm, totalCents, busy }: PaymentSheetProps) {
+function PaymentSheet({ open, onClose, onConfirm, totalCents, busy, errorMsg, onClearError }: PaymentSheetProps) {
   const [method, setMethod] = useState<'cash' | 'card'>('cash');
   const [tendered, setTendered] = useState(''); // EUR-Betrag, "5,00"
   const tenderedCents = useMemo(() => {
@@ -356,11 +364,30 @@ function PaymentSheet({ open, onClose, onConfirm, totalCents, busy }: PaymentShe
 
   const submit = () => {
     if (!enough) return;
+    onClearError();
     onConfirm({ method, tendered_cents: method === 'card' ? totalCents : tenderedCents });
   };
 
+  // Beim Schliessen / Method-Wechsel alten Error wegräumen.
+  useEffect(() => {
+    if (!open) onClearError();
+  }, [open, onClearError]);
+
   return (
     <BottomSheet open={open} onClose={onClose} title="Bezahlen" maxHeight="90vh">
+      {errorMsg && (
+        <div
+          className="mb-3 rounded-xl border border-red-300 bg-red-500/10 p-3 text-sm text-red-200 dark:border-red-500/40"
+          role="alert"
+          aria-live="polite"
+        >
+          <p className="font-semibold">Bezahlung fehlgeschlagen</p>
+          <p className="mt-1 break-words text-xs">{errorMsg}</p>
+          <p className="mt-1 text-xs text-[color:var(--text-muted)]">
+            Der Warenkorb ist noch da — du kannst es nochmal versuchen.
+          </p>
+        </div>
+      )}
       <div className="rounded-xl bg-[color:var(--bg-page)] p-4 text-center">
         <p className="text-sm uppercase tracking-wide text-ink-500">Zu zahlen</p>
         <p className="text-3xl font-bold">{formatPriceCents(totalCents)}</p>

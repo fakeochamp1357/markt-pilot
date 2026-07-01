@@ -45,6 +45,11 @@ const Schema = z.object({
   expiry_date: z.string().nullable().optional(),
   supplier: z.string().max(200).nullable().optional().or(z.literal('')),
   notes: z.string().max(1000).nullable().optional().or(z.literal('')),
+  // POS-Erweiterungen
+  deposit_cents: z.coerce.number().int().min(0).default(0),
+  pieces_per_pack: z.coerce.number().int().min(1).default(1),
+  pack_unit: z.string().max(20).nullable().optional().or(z.literal('')),
+  pack_barcode: z.string().max(32).nullable().optional().or(z.literal('')),
 });
 
 export type ProductFormValues = z.infer<typeof Schema>;
@@ -102,6 +107,10 @@ export function ProductForm({
       expiry_date: initial?.expiry_date ?? '',
       supplier: initial?.supplier ?? '',
       notes: initial?.notes ?? '',
+      deposit_cents: initial?.deposit_cents ?? 0,
+      pieces_per_pack: initial?.pieces_per_pack ?? 1,
+      pack_unit: initial?.pack_unit ?? '',
+      pack_barcode: initial?.pack_barcode ?? '',
     },
   });
 
@@ -141,6 +150,10 @@ export function ProductForm({
       is_active: initial?.is_active ?? true,
       color_tag: initial?.color_tag ?? '#3B82F6',
       currency: initial?.currency ?? 'EUR',
+      deposit_cents: vals.deposit_cents ?? 0,
+      pieces_per_pack: vals.pieces_per_pack ?? 1,
+      pack_unit: vals.pack_unit?.trim() ? vals.pack_unit.trim() : null,
+      pack_barcode: vals.pack_barcode?.trim() ? vals.pack_barcode.trim() : null,
     };
     // eslint-disable-next-line no-console
     // eslint-disable-next-line no-console
@@ -294,6 +307,64 @@ export function ProductForm({
         <label className="label" htmlFor="f-mhd">MHD</label>
         <input id="f-mhd" type="date" className="input" {...register('expiry_date')} />
       </div>
+
+      {/* POS / Kasse: Pfand + Packungs-Groeße */}
+      <fieldset className="rounded-xl border border-[color:var(--border-strong)] p-3 space-y-3">
+        <legend className="px-2 text-xs font-medium uppercase tracking-wide text-[color:var(--text-secondary)]">
+          Kasse
+        </legend>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label" htmlFor="f-deposit">Pfand (Cent)</label>
+            <input
+              id="f-deposit"
+              className="input"
+              inputMode="numeric"
+              placeholder="0"
+              min={0}
+              {...register('deposit_cents')}
+            />
+            <p className="mt-1 text-xs text-[color:var(--text-muted)]">
+              z.B. 25 für 0,25 € Dose.
+            </p>
+          </div>
+          <div>
+            <label className="label" htmlFor="f-pieces">Stück pro Packung</label>
+            <input
+              id="f-pieces"
+              className="input"
+              inputMode="numeric"
+              placeholder="1"
+              min={1}
+              {...register('pieces_per_pack')}
+            />
+            <p className="mt-1 text-xs text-[color:var(--text-muted)]">
+              z.B. 24 für 24er-Tray.
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label" htmlFor="f-pack-unit">Packungs-Einheit</label>
+            <input
+              id="f-pack-unit"
+              className="input"
+              placeholder="Tray, Karton …"
+              {...register('pack_unit')}
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="f-pack-barcode">Packungs-Barcode</label>
+            <input
+              id="f-pack-barcode"
+              className="input"
+              inputMode="numeric"
+              placeholder="optional"
+              {...register('pack_barcode')}
+            />
+          </div>
+        </div>
+      </fieldset>
 
       <div>
         <label className="label" htmlFor="f-supplier">Lieferant</label>
