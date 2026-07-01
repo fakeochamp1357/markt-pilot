@@ -113,6 +113,7 @@ def apply_receipt(
         total_cents=payload.total_cents,
         cashier_name=payload.cashier_name,
         notes=payload.notes,
+        print_requested=payload.print_requested,
     )
     db.add(receipt)
     db.flush()  # damit receipt.id fuer die Lines verfuegbar ist

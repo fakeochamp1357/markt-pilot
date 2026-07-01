@@ -7,7 +7,7 @@
  * - Total wird lokal gerundet, Server validiert nochmal
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Minus, Trash2, ShoppingCart, ScanLine, X, Search } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingCart, ScanLine, X, Search, CheckCircle2 } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { useMarketData } from '@/hooks/useData';
 import { useCartStore } from '@/store/cart';
@@ -36,6 +36,9 @@ export function POSPage() {
   const [pickerQ, setPickerQ] = useState('');
   const [payOpen, setPayOpen] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<Receipt | null>(null);
+  // Wenn der Kunde keinen Bon moechte, zeigen wir nur einen kurzen
+  // Erfolgs-Banner statt des vollen ReceiptSheet.
+  const [successReceipt, setSuccessReceipt] = useState<Receipt | null>(null);
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -60,7 +63,7 @@ export function POSPage() {
   };
 
   const onConfirmCheckout = async (
-    payment: { method: 'cash' | 'card'; tendered_cents: number }
+    payment: { method: 'cash' | 'card'; tendered_cents: number; printRequested: boolean }
   ) => {
     setBusy(true);
     setErrorMsg(null);
@@ -73,6 +76,7 @@ export function POSPage() {
         total_cents: grandTotal,
         cashier_name: null,
         notes: null,
+        print_requested: payment.printRequested,
         lines: lines.map((l) => ({
           kind: l.kind,
           product_id: l.productId,
@@ -89,11 +93,23 @@ export function POSPage() {
 
       const opId = checkoutClientOpId ?? newCheckoutOpId();
       // eslint-disable-next-line no-console
-      console.log('[POS] checkout start', { totalCents: payload.total_cents, lines: payload.lines.length, opId });
+      console.log('[POS] checkout start', {
+        totalCents: payload.total_cents,
+        lines: payload.lines.length,
+        opId,
+        print_requested: payload.print_requested,
+      });
       const receipt = await createReceipt(payload, opId);
       // eslint-disable-next-line no-console
       console.log('[POS] checkout success', receipt.receipt_number, 'id=', receipt.id);
-      setLastReceipt(receipt);
+      // Wenn der Kunde einen Bon moechte, zeigen wir den Bildschirm-Bon an.
+      // Sonst nur ein kurzer "Bezahlt"-Banner.
+      if (receipt.print_requested) {
+        setLastReceipt(receipt);
+      } else {
+        setSuccessReceipt(receipt);
+        window.setTimeout(() => setSuccessReceipt(null), 4000);
+      }
       setPayOpen(false);
       clearCart();
       await refresh();
@@ -110,6 +126,34 @@ export function POSPage() {
 
   return (
     <div className="px-4 pt-3 pb-32">
+      {/* Erfolgs-Banner nach stillem Checkout (Kunde wollte keinen Bon) */}
+      {successReceipt && (
+        <div
+          className="card mt-2 flex items-center gap-3 border-emerald-500/40 bg-emerald-500/10 p-3 text-emerald-700"
+          role="status"
+          aria-live="polite"
+        >
+          <CheckCircle2 size={20} className="shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold">
+              ✓ Bezahlt — {successReceipt.receipt_number}
+            </p>
+            <p className="text-xs">
+              {successReceipt.lines.length} Position(en), Summe{' '}
+              {formatPriceCents(successReceipt.total_cents)} — kein Bon gewünscht.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLastReceipt(successReceipt)}
+            className="btn btn-ghost btn-sm"
+            aria-label="Bon doch anzeigen"
+          >
+            Bon anzeigen
+          </button>
+        </div>
+      )}
+
       {/* Leerer Warenkorb-Hint */}
       {lineCount === 0 && (
         <div className="card mt-8 p-8 text-center">
@@ -340,6 +384,7 @@ interface PaymentSheetProps {
   onConfirm: (payment: {
     method: 'cash' | 'card';
     tendered_cents: number;
+    printRequested: boolean;
   }) => Promise<void> | void;
   totalCents: number;
   busy: boolean;
@@ -349,6 +394,7 @@ interface PaymentSheetProps {
 
 function PaymentSheet({ open, onClose, onConfirm, totalCents, busy, errorMsg, onClearError }: PaymentSheetProps) {
   const [method, setMethod] = useState<'cash' | 'card'>('cash');
+  const [printRequested, setPrintRequested] = useState(true);
   const [tendered, setTendered] = useState(''); // EUR-Betrag, "5,00"
   const tenderedCents = useMemo(() => {
     const n = parseFloat(tendered.replace(',', '.'));
@@ -365,7 +411,11 @@ function PaymentSheet({ open, onClose, onConfirm, totalCents, busy, errorMsg, on
   const submit = () => {
     if (!enough) return;
     onClearError();
-    onConfirm({ method, tendered_cents: method === 'card' ? totalCents : tenderedCents });
+    onConfirm({
+      method,
+      tendered_cents: method === 'card' ? totalCents : tenderedCents,
+      printRequested,
+    });
   };
 
   // Beim Schliessen / Method-Wechsel alten Error wegräumen.
@@ -468,13 +518,37 @@ function PaymentSheet({ open, onClose, onConfirm, totalCents, busy, errorMsg, on
         </p>
       )}
 
+      {/* Bon-Wahl: Kunde moechte gedruckten Bon ja/nein */}
+      <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--border-strong)] p-3">
+        <input
+          type="checkbox"
+          checked={printRequested}
+          onChange={(e) => setPrintRequested(e.target.checked)}
+          className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[color:var(--accent-strong)]"
+          aria-describedby="print-hint"
+        />
+        <span className="flex-1">
+          <span className="font-medium">Bon für Kunde drucken</span>
+          <span id="print-hint" className="block text-xs text-[color:var(--text-muted)]">
+            Standardmaessig ein. Bei „aus" wird der Bon nur digital gebucht und ist ueber
+            die Tagesabschluss-Liste wiederzufinden.
+          </span>
+        </span>
+      </label>
+
       <button
         type="button"
         onClick={submit}
         disabled={!enough || busy}
         className="btn btn-primary btn-lg mt-4 w-full"
       >
-        {busy ? 'Speichere …' : method === 'card' ? 'Bezahlung bestätigen' : 'Bezahlung abschließen'}
+        {busy
+          ? 'Speichere …'
+          : method === 'card'
+            ? 'Bezahlung bestätigen'
+            : printRequested
+              ? 'Bezahlen & Bon zeigen'
+              : 'Bezahlen (ohne Bon)'}
       </button>
     </BottomSheet>
   );

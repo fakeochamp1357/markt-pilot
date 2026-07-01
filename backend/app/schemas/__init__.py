@@ -362,6 +362,7 @@ class ReceiptCreate(BaseModel):
     total_cents: int
     cashier_name: str | None = Field(None, max_length=80)
     notes: str | None = Field(None, max_length=500)
+    print_requested: bool = True
     lines: list[ReceiptLineCreate] = Field(..., min_length=1)
 
 
@@ -394,6 +395,7 @@ class ReceiptRead(BaseModel):
     total_cents: int
     cashier_name: str | None
     notes: str | None
+    print_requested: bool
     created_at: datetime
     lines: list[ReceiptLineRead]
 

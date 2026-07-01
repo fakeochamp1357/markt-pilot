@@ -252,6 +252,10 @@ class Receipt(Base):
     # Mitarbeiter (frei Text, kein Login in Phase A — Mitarbeiterloyalität)
     cashier_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Soll der Bon am Belegdrucker gedruckt werden? (Phase B — aktuell nur Flag)
+    print_requested: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow, index=True

@@ -160,6 +160,7 @@ def void_receipt(
         total_cents=-original.total_cents,
         cashier_name=original.cashier_name,
         notes=f"Storno zu Bon {original.receipt_number}",
+        print_requested=False,  # Storno wird nicht separat gedruckt
         lines=[
             {
                 "kind": "storno",

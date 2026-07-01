@@ -140,6 +140,7 @@ export interface Receipt {
   total_cents: number;
   cashier_name: string | null;
   notes: string | null;
+  print_requested: boolean;
   created_at: string;
   lines: ReceiptLine[];
 }
@@ -154,6 +155,7 @@ export interface ReceiptCreatePayload {
   total_cents: number;
   cashier_name?: string | null;
   notes?: string | null;
+  print_requested?: boolean;
   lines: {
     kind: ReceiptLineKind;
     product_id: number | null;
