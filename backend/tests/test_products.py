@@ -256,3 +256,8 @@ def test_export_pdf(client):
     assert resp.headers["content-type"] == "application/pdf"
     # PDF-Magic
     assert resp.content[:4] == b"%PDF"
+    # TODO: robustere Inhalts-Pruefung mit pypdf. Aktuell reicht der
+    # Sanity-Check, dass die Datei erzeugt wird; reportlab packt die
+    # Inhalte in komprimierte Streams, in denen Strings nicht einfach
+    # greppbar sind.
+    assert len(resp.content) > 1000

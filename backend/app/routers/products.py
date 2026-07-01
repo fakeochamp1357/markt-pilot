@@ -401,12 +401,14 @@ def export_products(
     elems.append(Paragraph(f"Stand: {today}", styles["Normal"]))
     elems.append(Spacer(1, 6 * mm))
 
-    table_data = [["Name", "Barcode", "VK (€)", "Bestand", "Einheit"]]
+    table_data = [["Name", "Barcode", "VK", "Bestand", "Einheit"]]
     for p in rows:
+        # Deutsches Format: Komma als Dezimaltrenner, " €" mit Leerzeichen.
+        vk_euro = f"{p.sell_price_cents / 100:.2f}".replace(".", ",") + " €"
         table_data.append([
             p.name,
             p.barcode or "",
-            f"{p.sell_price_cents / 100:.2f}",
+            vk_euro,
             str(p.stock_quantity),
             p.unit,
         ])
