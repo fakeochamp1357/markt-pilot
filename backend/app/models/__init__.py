@@ -162,3 +162,32 @@ class StockMovement(Base):
     )
 
     product: Mapped["Product"] = relationship("Product", back_populates="stock_movements")
+
+
+class ProcessedOp(Base):
+    """Idempotenz-Cache: pro (client_op_id, endpoint) wird die erste Server-Antwort
+    gespeichert, damit Retries dieselbe Antwort bekommen — keine Duplikate.
+
+    Wird vom Frontend-Outbox genutzt, das bei Verbindungsabbruch die Anfrage
+    erneut sendet. Ohne diesen Cache würde z.B. ein zweiter
+    ``POST /api/products``-Call mit demselben Payload zwei Produkte anlegen,
+    oder ein zweiter ``POST /api/stock/movements``-Call den Bestand doppelt
+    verändern.
+    """
+
+    __tablename__ = "processed_ops"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # UUID-vom-Client, max 64 chars (z.B. "01J..." für ULID oder klassisches v4)
+    client_op_id: Mapped[str] = mapped_column(
+        String(64), nullable=False, unique=True, index=True
+    )
+    # Endpoint-Pfad, damit klar ist, wofür das Idempotenz-Token gilt
+    endpoint: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    # HTTP-Statuscode der ursprünglichen Antwort
+    status_code: Mapped[int] = mapped_column(Integer, nullable=False)
+    # JSON-Body der ursprünglichen Antwort, zum erneuten Zurückgeben
+    response_json: Mapped[str] = mapped_column(String(2000), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )

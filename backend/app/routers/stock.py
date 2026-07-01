@@ -18,6 +18,12 @@ from app.schemas import (
     StockMovementRead,
 )
 from app.services import StockUpdateError, apply_stock_movement
+from app.services.idempotency import (
+    CachedResponse,
+    client_op_id_header,
+    get_cached_response,
+    record_response,
+)
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
 
@@ -26,12 +32,28 @@ router = APIRouter(prefix="/api/stock", tags=["stock"])
 def create_movement(
     payload: StockMovementCreate,
     db: Session = Depends(get_db),
+    client_op_id: str | None = Depends(client_op_id_header),
 ) -> StockMovementRead:
     """Verbucht eine Stock-Bewegung.
 
     Atomar via optimistischem Lock (Version-CAS). Doppelte parallele Calls
     werden sauber serialisiert; bei Race-Condition gibt es einen 409-Response.
+
+    **Idempotenz**: mit ``X-Client-Op-Id``-Header wird der erste Erfolg
+    gecached. Wiederholte Calls mit derselben ID liefern die ursprüngliche
+    Movement-ID zurück, ohne den Bestand erneut zu verändern. KRITISCH für
+    die Kasse: ein Retry nach WLAN-Crash darf den Bestand nicht doppelt
+    abbuchen.
     """
+    # --- Idempotenz ---
+    if client_op_id:
+        cached = get_cached_response(db, client_op_id, "POST /api/stock/movements")
+        if cached is not None:
+            replay = CachedResponse(cached.response_json, cached.status_code)
+            replay.raise_for_status()
+            return StockMovementRead.model_validate(replay.body())
+    # --- Ende Idempotenz-Vorprüfung ---
+
     try:
         movement, _ = apply_stock_movement(
             db,
@@ -42,9 +64,28 @@ def create_movement(
             created_by=payload.created_by,
         )
     except StockUpdateError as exc:
+        # 409 cachen — sonst würde der Client bei einem fehlgeschlagenen
+        # CAS-Update endlos retry-en und immer wieder 409 bekommen.
+        if client_op_id:
+            record_response(
+                db,
+                client_op_id=client_op_id,
+                endpoint="POST /api/stock/movements",
+                status_code=409,
+                response_body={"detail": str(exc)},
+            )
         raise HTTPException(status_code=409, detail=str(exc))
 
-    return StockMovementRead.model_validate(movement)
+    result = StockMovementRead.model_validate(movement)
+    if client_op_id:
+        record_response(
+            db,
+            client_op_id=client_op_id,
+            endpoint="POST /api/stock/movements",
+            status_code=201,
+            response_body=result.model_dump(mode="json"),
+        )
+    return result
 
 
 @router.get("/movements", response_model=StockMovementList)

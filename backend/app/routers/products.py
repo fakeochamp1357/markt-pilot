@@ -24,6 +24,12 @@ from app.schemas import (
     ProductUpdate,
     decimal_to_cents,
 )
+from app.services.idempotency import (
+    CachedResponse,
+    client_op_id_header,
+    get_cached_response,
+    record_response,
+)
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 
@@ -445,7 +451,17 @@ def get_product(product_id: int, db: Session = Depends(get_db)) -> ProductRead:
 def create_product(
     payload: ProductCreate,
     db: Session = Depends(get_db),
+    client_op_id: str | None = Depends(client_op_id_header),
 ) -> ProductRead:
+    # --- Idempotenz: gleicher X-Client-Op-Id → gespeicherte Antwort zurück ---
+    if client_op_id:
+        cached = get_cached_response(db, client_op_id, "POST /api/products")
+        if cached is not None:
+            replay = CachedResponse(cached.response_json, cached.status_code)
+            replay.raise_for_status()
+            return ProductRead.model_validate(replay.body())
+    # --- Ende Idempotenz-Vorprüfung ---
+
     _validate_category(db, payload.category_id)
 
     # Eindeutigkeit sicherstellen
@@ -473,7 +489,18 @@ def create_product(
     db.add(product)
     db.commit()
     db.refresh(product)
-    return ProductRead.from_orm_product(product)
+    result = ProductRead.from_orm_product(product)
+
+    # Idempotenz-Antwort cachen
+    if client_op_id:
+        record_response(
+            db,
+            client_op_id=client_op_id,
+            endpoint="POST /api/products",
+            status_code=201,
+            response_body=result.model_dump(mode="json"),
+        )
+    return result
 
 
 @router.put("/{product_id}", response_model=ProductRead)

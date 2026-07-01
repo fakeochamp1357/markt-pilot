@@ -9,6 +9,12 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models import Category
 from app.schemas import CategoryCreate, CategoryRead, CategoryUpdate
+from app.services.idempotency import (
+    CachedResponse,
+    client_op_id_header,
+    get_cached_response,
+    record_response,
+)
 
 router = APIRouter(prefix="/api/categories", tags=["categories"])
 
@@ -23,8 +29,19 @@ def list_categories(db: Session = Depends(get_db)) -> list[CategoryRead]:
 
 @router.post("", response_model=CategoryRead, status_code=201)
 def create_category(
-    payload: CategoryCreate, db: Session = Depends(get_db)
+    payload: CategoryCreate,
+    db: Session = Depends(get_db),
+    client_op_id: str | None = Depends(client_op_id_header),
 ) -> CategoryRead:
+    # --- Idempotenz ---
+    if client_op_id:
+        cached = get_cached_response(db, client_op_id, "POST /api/categories")
+        if cached is not None:
+            replay = CachedResponse(cached.response_json, cached.status_code)
+            replay.raise_for_status()
+            return CategoryRead.model_validate(replay.body())
+    # --- Ende Idempotenz-Vorprüfung ---
+
     if payload.parent_id is not None:
         if not db.get(Category, payload.parent_id):
             raise HTTPException(
@@ -37,12 +54,32 @@ def create_category(
         db.commit()
     except IntegrityError:
         db.rollback()
+        # Bei Konflikt cachen wir die 409-Antwort, damit der Client beim
+        # Retry nicht in eine Endlosschleife gerät.
+        if client_op_id:
+            record_response(
+                db,
+                client_op_id=client_op_id,
+                endpoint="POST /api/categories",
+                status_code=409,
+                response_body={"detail": f"Kategorie '{payload.name}' existiert bereits."},
+            )
         raise HTTPException(
             status_code=409,
             detail=f"Kategorie '{payload.name}' existiert bereits.",
         )
     db.refresh(cat)
-    return CategoryRead.model_validate(cat)
+    result = CategoryRead.model_validate(cat)
+
+    if client_op_id:
+        record_response(
+            db,
+            client_op_id=client_op_id,
+            endpoint="POST /api/categories",
+            status_code=201,
+            response_body=result.model_dump(mode="json"),
+        )
+    return result
 
 
 @router.put("/{category_id}", response_model=CategoryRead)
