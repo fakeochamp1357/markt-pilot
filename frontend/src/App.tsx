@@ -6,6 +6,7 @@ import { CategoriesPage } from '@/pages/CategoriesPage';
 import { ScannerPage } from '@/pages/ScannerPage';
 import { MorePage } from '@/pages/MorePage';
 import { POSPage } from '@/pages/POSPage';
+import { ReceiptsPage } from '@/pages/ReceiptsPage';
 import { useOutboxSync } from '@/hooks/useOutboxSync';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/scanner" element={<ScannerPage />} />
         <Route path="/more" element={<MorePage />} />
+        <Route path="/receipts" element={<ReceiptsPage />} />
         <Route path="*" element={<POSPage />} />
       </Route>
     </Routes>

@@ -9,6 +9,7 @@ const TITLES: Record<string, string> = {
   '/categories': 'Kategorien',
   '/scanner': 'Scanner',
   '/more': 'Mehr',
+  '/receipts': 'Kassenbuch',
 };
 
 export function AppShell() {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Database,
   FileText,
@@ -10,6 +11,7 @@ import {
   CloudOff,
   WifiOff,
   Settings,
+  Receipt,
 } from 'lucide-react';
 import { listOutbox } from '@/db/dexie';
 import { resetFailedOutboxEntries, syncOutboxOnce } from '@/hooks/useOutboxSync';
@@ -109,6 +111,19 @@ export function MorePage() {
             {info}
           </p>
         )}
+      </Section>
+
+      <Section icon={<Receipt />} title="Kassenbuch">
+        <Link
+          to="/receipts"
+          className="btn btn-secondary w-full"
+        >
+          <Receipt size={16} />
+          Heutige Bons anzeigen
+        </Link>
+        <p className="mt-1 text-xs text-ink-500">
+          Tagesübersicht, alle Bons, Storno-Funktion.
+        </p>
       </Section>
 
       <Section icon={<Settings />} title="Einstellungen">

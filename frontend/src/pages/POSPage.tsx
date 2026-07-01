@@ -7,6 +7,7 @@
  * - Total wird lokal gerundet, Server validiert nochmal
  */
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, Minus, Trash2, ShoppingCart, ScanLine, X, Search, CheckCircle2, CreditCard } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { useMarketData } from '@/hooks/useData';
@@ -151,6 +152,13 @@ export function POSPage() {
           >
             Bon anzeigen
           </button>
+          <Link
+            to="/receipts"
+            className="btn btn-ghost btn-sm"
+            aria-label="Kassenbuch oeffnen"
+          >
+            Kassenbuch
+          </Link>
         </div>
       )}
 
