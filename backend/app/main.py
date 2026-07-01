@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.session import Base, engine
-from app.routers import categories, products, stock
+from app.routers import categories, products, receipts, stock
 
 # Modelle registrieren (müssen vor ``create_all`` importiert sein)
 import app.models  # noqa: F401
@@ -67,3 +67,4 @@ def healthz() -> dict[str, str]:
 app.include_router(products.router)
 app.include_router(categories.router)
 app.include_router(stock.router)
+app.include_router(receipts.router)

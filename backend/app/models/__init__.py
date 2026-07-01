@@ -122,6 +122,22 @@ class Product(Base):
     # Optimistic locking — wird bei Stock-Movement-CAS verwendet.
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
+    # Pfand pro Stueck (in Cent), 0 fuer artikel ohne Pfand
+    # (z.B. 25 fuer Getraenkedosen mit 0,25 EUR Einwegpfand).
+    deposit_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # Packungs-Information: pieces_per_pack > 1 bedeutet "wird in
+    # Packungen eingekauft". Z.B. Vimto 24er-Tray = 24 Dosen.
+    # Bestand wird in Stueck gefuehrt; Wareneingang kann in Packungen
+    # gebucht werden (qty * pieces_per_pack).
+    pieces_per_pack: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    # Optionale Einheit der Packung, z.B. "Tray" oder "Karton".
+    pack_unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Optional: eigener Barcode der Packung (z.B. Tray-Barcode != Dosen-Barcode).
+    pack_barcode: Mapped[str | None] = mapped_column(
+        String(32), nullable=True, index=True
+    )
+
     category: Mapped["Category | None"] = relationship("Category", back_populates="products")
     stock_movements: Mapped[list["StockMovement"]] = relationship(
         "StockMovement",
@@ -191,3 +207,104 @@ class ProcessedOp(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )
+
+
+# Receipt-Kind: Verkaufs-, Storno- oder Retourbon.
+# Storno = macht einen vorherigen Verkauf rückgängig (Tagesabschluss).
+# Retoure = ein Kunde bringt Ware zurück und bekommt Geld.
+RECEIPT_KINDS = ("sale", "storno", "return")
+# Wie bezahlt wurde. "mixed" = mehrere Methoden (Bargeld + Karte).
+PAYMENT_METHODS = ("cash", "card", "mixed")
+
+
+class Receipt(Base):
+    """Kassenbon — Header.
+
+    Ein Bon gehört zu genau einem ``cash_session_id`` (Tagesabschluss/Schicht),
+    aber für Phase A ist das nur ein loser String (Datum oder Schicht-Name).
+    """
+
+    __tablename__ = "receipts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # Menschenlesbare Bon-Nummer, fortlaufend pro Tag. Wird vom Server vergeben.
+    receipt_number: Mapped[str] = mapped_column(
+        String(40), nullable=False, unique=True, index=True
+    )
+    # 'sale', 'storno', 'return'
+    kind: Mapped[str] = mapped_column(String(16), nullable=False, default="sale")
+    # Optionale Verknüpfung: Storno/Retoure zeigt auf den ursprünglichen Bon.
+    original_receipt_id: Mapped[int | None] = mapped_column(
+        ForeignKey("receipts.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # Schicht-Kennung (z.B. Datum). Später ein eigener CashSession-Table.
+    cash_session: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    # Bezahlung
+    payment_method: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="cash"
+    )
+    tendered_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    change_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Total inkl. Pfand, in Cent. Negativ bei Storno/Retoure.
+    total_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Mitarbeiter (frei Text, kein Login in Phase A — Mitarbeiterloyalität)
+    cashier_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow, index=True
+    )
+
+    lines: Mapped[list["ReceiptLine"]] = relationship(
+        "ReceiptLine",
+        back_populates="receipt",
+        cascade="all, delete-orphan",
+        order_by="ReceiptLine.position",
+    )
+
+
+class ReceiptLine(Base):
+    """Einzelposition auf einem Kassenbon.
+
+    Line-Kinds:
+      - 'sale'    : regulärer Verkauf (qty * unit_price > 0)
+      - 'deposit' : Pfand-Anteil (qty = Bon-Stueck-Zahl, unit_price = Pfand-Cent)
+      - 'return'  : Rücknahme (positiv im Retoure-Bon, negativ in Sale-Bon)
+      - 'storno'  : Storno-Position (immer negativ)
+    """
+
+    __tablename__ = "receipt_lines"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    receipt_id: Mapped[int] = mapped_column(
+        ForeignKey("receipts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # Position in der Reihenfolge auf dem Bon
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Welche Art von Zeile (sale/deposit/return/storno)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False, default="sale")
+    # Optional: das verkaufte Produkt. Pfand-only-Positionen haben ggf. kein
+    # product_id (z.B. Pfand-Rückgabe ohne zugehöriges Produkt).
+    product_id: Mapped[int | None] = mapped_column(
+        ForeignKey("products.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # Snapshot von Name/Größe zum Zeitpunkt des Verkaufs — Bon bleibt lesbar,
+    # auch wenn das Produkt später gelöscht/umbenannt wird.
+    name_snapshot: Mapped[str] = mapped_column(String(200), nullable=False)
+    unit_snapshot: Mapped[str] = mapped_column(String(20), nullable=False, default="Stück")
+    # Menge (Decimal für kg/g/ml bei Wiegeware)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+    # Einzelpreis in Cent (kann negativ sein bei Storno/Retoure)
+    unit_price_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Zeilensumme (quantity * unit_price, gerundet in Cent)
+    line_total_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Optionaler Kommentar (z.B. "Wurst 100g" bei Wiegeware)
+    comment: Mapped[str | None] = mapped_column(String(200), nullable=True)
+
+    receipt: Mapped["Receipt"] = relationship("Receipt", back_populates="lines")

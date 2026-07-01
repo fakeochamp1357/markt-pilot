@@ -110,6 +110,11 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     """POST-Body für /api/products."""
 
+    deposit_cents: int = Field(0, ge=0)
+    pieces_per_pack: int = Field(1, ge=1)
+    pack_unit: str | None = Field(None, max_length=20)
+    pack_barcode: str | None = Field(None, max_length=32)
+
 
 class ProductUpdate(BaseModel):
     """Alle Felder optional — wird für PUT verwendet."""
@@ -133,6 +138,10 @@ class ProductUpdate(BaseModel):
     image_url: str | None = Field(None, max_length=500)
     color_tag: str | None = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$")
     is_active: bool | None = None
+    deposit_cents: int | None = Field(None, ge=0)
+    pieces_per_pack: int | None = Field(None, ge=1)
+    pack_unit: str | None = Field(None, max_length=20)
+    pack_barcode: str | None = Field(None, max_length=32)
 
 
 class ProductRead(ProductBase):
@@ -142,6 +151,10 @@ class ProductRead(ProductBase):
     version: int
     created_at: datetime
     updated_at: datetime
+    deposit_cents: int
+    pieces_per_pack: int
+    pack_unit: str | None
+    pack_barcode: str | None
 
     @classmethod
     def from_orm_product(cls, obj) -> "ProductRead":
@@ -168,6 +181,10 @@ class ProductRead(ProductBase):
             version=obj.version,
             created_at=obj.created_at,
             updated_at=obj.updated_at,
+            deposit_cents=obj.deposit_cents,
+            pieces_per_pack=obj.pieces_per_pack,
+            pack_unit=obj.pack_unit,
+            pack_barcode=obj.pack_barcode,
         )
 
 
@@ -292,6 +309,89 @@ class ExpiringProduct(BaseModel):
         )
 
 
+# ---------------------------------------------------------------------------
+# Receipt / POS
+# ---------------------------------------------------------------------------
+
+
+ReceiptKind = Literal["sale", "storno", "return"]
+ReceiptLineKind = Literal["sale", "deposit", "return", "storno"]
+PaymentMethod = Literal["cash", "card", "mixed"]
+
+
+class ReceiptLineCreate(BaseModel):
+    """Eine Position auf einem Kassenbon."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    kind: ReceiptLineKind = "sale"
+    # product_id: optional, weil deposit-only / manuelle Pfandrueckgabe-
+    # Positionen kein Produkt binden.
+    product_id: int | None = None
+    name_snapshot: str = Field(..., min_length=1, max_length=200)
+    unit_snapshot: str = Field("Stück", max_length=20)
+    quantity: QuantityDecimal
+    unit_price_cents: int
+    line_total_cents: int
+    comment: str | None = Field(None, max_length=200)
+
+
+class ReceiptCreate(BaseModel):
+    """POST-Body für /api/receipts.
+
+    Der Client baut den Bon im Cart zusammen (Produkt-Snapshots + ggf.
+    Pfand-Positionen) und schickt ihn als Ganzes. Server validiert,
+    generiert receipt_number, wendet Stock-Movements an und persistiert
+    den Bon — alles in einer DB-Transaktion.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    kind: ReceiptKind = "sale"
+    original_receipt_id: int | None = None
+    cash_session: str = Field(..., min_length=1, max_length=40)
+    payment_method: PaymentMethod = "cash"
+    tendered_cents: int = Field(0, ge=0)
+    change_cents: int = Field(0, ge=0)
+    total_cents: int
+    cashier_name: str | None = Field(None, max_length=80)
+    notes: str | None = Field(None, max_length=500)
+    lines: list[ReceiptLineCreate] = Field(..., min_length=1)
+
+
+class ReceiptLineRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    position: int
+    kind: str
+    product_id: int | None
+    name_snapshot: str
+    unit_snapshot: str
+    quantity: Decimal
+    unit_price_cents: int
+    line_total_cents: int
+    comment: str | None
+
+
+class ReceiptRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    receipt_number: str
+    kind: str
+    original_receipt_id: int | None
+    cash_session: str
+    payment_method: str
+    tendered_cents: int
+    change_cents: int
+    total_cents: int
+    cashier_name: str | None
+    notes: str | None
+    created_at: datetime
+    lines: list[ReceiptLineRead]
+
+
 # CSV-Import Re-Export
 __all__ = [
     "CategoryBase",
@@ -311,6 +411,10 @@ __all__ = [
     "StockMovementList",
     "LowStockProduct",
     "ExpiringProduct",
+    "ReceiptCreate",
+    "ReceiptLineCreate",
+    "ReceiptLineRead",
+    "ReceiptRead",
     "cents_to_decimal",
     "decimal_to_cents",
 ]
