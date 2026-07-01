@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, TrendingDown, CalendarClock, Boxes, Euro } from 'lucide-react';
+import { Plus, TrendingDown, CalendarClock, Boxes, Euro, Save, ScanLine } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { useMarketData, useStockKpis } from '@/hooks/useData';
 import { useAppStore } from '@/store';
@@ -190,9 +190,10 @@ export function InventoryPage() {
       <button
         type="button"
         onClick={() => setSheet('in')}
-        className="btn-primary w-full"
+        className="btn btn-primary btn-sm"
       >
-        <Plus size={18} className="inline mr-1" /> Wareneingang erfassen
+        <Plus size={14} />
+        Wareneingang erfassen
       </button>
 
       <BottomSheet
@@ -258,8 +259,9 @@ export function InventoryPage() {
             type="button"
             disabled={submitting}
             onClick={onSubmitMovement}
-            className="btn-primary w-full"
+            className="btn btn-primary"
           >
+            <Save size={16} />
             {submitting ? 'Speichern …' : 'Buchen'}
           </button>
         </div>

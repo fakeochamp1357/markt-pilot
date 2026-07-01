@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Trash2, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, ChevronRight, Save } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { useMarketData } from '@/hooks/useData';
 import { useAppStore } from '@/store';
@@ -95,8 +95,9 @@ export function CategoriesPage() {
 
   return (
     <div className="px-4 pt-3">
-      <button type="button" onClick={openNew} className="btn-primary w-full mb-3">
-        <Plus size={18} className="inline mr-1" /> Neue Kategorie
+      <button type="button" onClick={openNew} className="btn btn-primary btn-sm mb-3">
+        <Plus size={14} />
+        Neue Kategorie
       </button>
       <ul className="space-y-2">
         {categories.length === 0 && (
@@ -194,8 +195,9 @@ export function CategoriesPage() {
             type="button"
             disabled={!name.trim() || submitting}
             onClick={submit}
-            className="btn-primary w-full disabled:opacity-50"
+            className="btn btn-primary disabled:opacity-50"
           >
+            <Save size={16} />
             {submitting ? 'Speichern …' : 'Speichern'}
           </button>
         </div>

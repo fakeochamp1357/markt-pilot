@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ScanLine, Calculator } from 'lucide-react';
+import { ScanLine, Calculator, Save } from 'lucide-react';
 import type { Category, Product } from '@/types/api';
 import { UNITS } from '@/types/api';
 import { computeMargin, formatPrice } from '@/utils/format';
@@ -376,8 +376,9 @@ export function ProductForm({
         <textarea id="f-notes" className="input min-h-[80px]" placeholder="optional" {...register('notes')} />
       </div>
 
-      <div className="sticky bottom-0 -mx-4 px-4 pt-2 pb-1 bg-white">
-        <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
+      <div className="sticky bottom-0 -mx-4 px-4 pt-2 pb-1 bg-[color:var(--bg-card)]">
+        <button type="submit" disabled={isSubmitting} className="btn btn-primary">
+          <Save size={16} />
           {isSubmitting ? 'Speichern …' : submitLabel}
         </button>
       </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Save } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 import type { Product, StockReason } from '@/types/api';
 import { formatQty } from '@/utils/format';
@@ -91,8 +92,9 @@ export function StockAdjustSheet({ open, product, onClose, onSubmit }: StockAdju
           type="button"
           disabled={!valid || submitting}
           onClick={submit}
-          className="btn-primary w-full disabled:opacity-50"
+          className="btn btn-primary disabled:opacity-50"
         >
+          <Save size={16} />
           {submitting ? 'Speichern …' : 'Buchen'}
         </button>
       </div>

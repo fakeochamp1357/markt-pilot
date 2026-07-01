@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, CameraOff, KeyboardIcon, ShoppingCart, Check } from 'lucide-react';
+import { Camera, CameraOff, KeyboardIcon, ShoppingCart, Check, Search } from 'lucide-react';
 import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser';
 import { BottomSheet } from '@/components/BottomSheet';
 import { ProductForm } from '@/components/ProductForm';
@@ -182,7 +182,8 @@ export function ScannerPage() {
             value={manualValue}
             onChange={(e) => setManualValue(e.target.value)}
           />
-          <button type="submit" className="btn-primary w-full" disabled={!manualValue.trim()}>
+          <button type="submit" className="btn btn-primary" disabled={!manualValue.trim()}>
+            <Search size={16} />
             Suchen
           </button>
         </form>
@@ -220,11 +221,11 @@ export function ScannerPage() {
             <button
               type="button"
               onClick={() => onAddToCart(foundProduct)}
-              className="btn btn-primary btn-lg w-full"
-            >
-              <ShoppingCart size={18} />
-              In den Warenkorb
-            </button>
+            className="btn btn-primary"
+          >
+            <ShoppingCart size={16} />
+            In den Warenkorb
+          </button>
             <button
               type="button"
               onClick={() => setFoundProduct(null)}

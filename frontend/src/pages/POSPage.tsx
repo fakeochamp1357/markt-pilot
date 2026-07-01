@@ -7,7 +7,7 @@
  * - Total wird lokal gerundet, Server validiert nochmal
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Minus, Trash2, ShoppingCart, ScanLine, X, Search, CheckCircle2 } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingCart, ScanLine, X, Search, CheckCircle2, CreditCard } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
 import { useMarketData } from '@/hooks/useData';
 import { useCartStore } from '@/store/cart';
@@ -270,6 +270,7 @@ export function POSPage() {
           disabled={lineCount === 0 || busy}
           className="btn btn-primary"
         >
+          <CreditCard size={16} />
           Bezahlen
         </button>
       </div>
