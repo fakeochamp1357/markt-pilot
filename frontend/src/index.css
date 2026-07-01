@@ -166,36 +166,119 @@
     box-shadow: 0 0 0 2px var(--accent-tint);
   }
 
+  /* ----------------------------------------------------------------
+   * Button-System
+   * ----------------------------------------------------------------
+   * Drei Hierarchien + eine danger-Variante:
+   *  - .btn-primary   : Hauptaktion, voll Lila, dezenter Glow im Dark
+   *  - .btn-secondary : wichtig, aber nicht die Hauptaktion, Outline-Style
+   *  - .btn-ghost     : tertiaer (z.B. "Cache leeren"), fast unsichtbar
+   *  - .btn-danger    : destruktiv (Loeschen etc.)
+   * Mit ``.btn-sm`` und ``.btn-lg`` fuer Groessenvarianten.
+   * Alle haben min-h-tap (44px) fuer Touch-Target-Compliance.
+   * ---------------------------------------------------------------- */
   .btn {
-    @apply tap rounded-xl px-4 text-base font-semibold transition-colors;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: 0.75rem;
+    padding: 0.625rem 1.125rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    border: 1px solid transparent;
+    cursor: pointer;
+    user-select: none;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease,
+      box-shadow 140ms ease,
+      transform 80ms ease;
+  }
+  .btn:active {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-tint);
+  }
+
+  .btn-sm {
+    min-height: 36px;
+    padding: 0.4375rem 0.875rem;
+    font-size: 0.875rem;
+    border-radius: 0.625rem;
+  }
+  .btn-lg {
+    min-height: 52px;
+    padding: 0.875rem 1.5rem;
+    font-size: 1.0625rem;
+    border-radius: 1rem;
   }
 
   .btn-primary {
-    background-color: var(--accent-strong);
+    background: linear-gradient(
+      180deg,
+      var(--accent) 0%,
+      var(--accent-strong) 100%
+    );
     color: var(--text-on-accent);
     box-shadow: var(--shadow-accent);
   }
   .btn-primary:hover {
-    background-color: var(--accent-darker);
+    background: linear-gradient(
+      180deg,
+      var(--accent-strong) 0%,
+      var(--accent-darker) 100%
+    );
   }
   .btn-primary:active {
-    background-color: var(--accent-darker);
+    background: var(--accent-darker);
+    box-shadow: none;
   }
 
   .btn-secondary {
     background-color: var(--bg-card);
-    border: 1px solid var(--border-strong);
+    border-color: var(--border-strong);
     color: var(--text-primary);
   }
   .btn-secondary:hover {
     background-color: var(--bg-hover);
+    border-color: var(--accent);
   }
   .btn-secondary:active {
     background-color: var(--bg-active);
   }
 
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--text-secondary);
+  }
+  .btn-ghost:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .btn-ghost:active {
+    background-color: var(--bg-active);
+  }
+
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
+    background-color: rgba(239, 68, 68, 0.95);
+    color: #ffffff;
+  }
+  .btn-danger:hover {
+    background-color: rgb(220, 38, 38);
+  }
+  .btn-danger:active {
+    background-color: rgb(185, 28, 28);
   }
 
   .label {

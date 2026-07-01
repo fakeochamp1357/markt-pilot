@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Database, FileDown, Info, Trash2, RefreshCw, CheckCircle2, CloudOff, WifiOff, Settings } from 'lucide-react';
+import {
+  Database,
+  FileText,
+  FileJson,
+  Info,
+  Trash2,
+  RefreshCw,
+  CheckCircle2,
+  CloudOff,
+  WifiOff,
+  Settings,
+} from 'lucide-react';
 import { listOutbox } from '@/db/dexie';
 import { resetFailedOutboxEntries, syncOutboxOnce } from '@/hooks/useOutboxSync';
 import { useAppStore } from '@/store';
@@ -79,18 +90,25 @@ export function MorePage() {
       </Section>
 
       <Section icon={<RefreshCw />} title="Synchronisation">
-        <button
-          type="button"
-          onClick={handleSync}
-          disabled={busy}
-          className="btn-primary w-full"
-        >
-          {busy ? 'Synchronisiere …' : 'Jetzt synchronisieren'}
-        </button>
-        <p className="mt-2 text-xs text-ink-500">
-          Setzt fehlgeschlagene Einträge zurück und versucht erneut.
-        </p>
-        {info && <p className="mt-2 text-xs text-ink-600">{info}</p>}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSync}
+            disabled={busy}
+            className="btn btn-primary"
+          >
+            <RefreshCw size={16} className={busy ? 'animate-spin' : ''} />
+            {busy ? 'Synchronisiere …' : 'Jetzt synchronisieren'}
+          </button>
+          <p className="flex-1 text-xs text-ink-500">
+            Setzt fehlgeschlagene Einträge zurück und versucht erneut.
+          </p>
+        </div>
+        {info && (
+          <p className="mt-2 text-xs text-ink-600 border-l-2 border-brand-500 pl-2">
+            {info}
+          </p>
+        )}
       </Section>
 
       <Section icon={<Settings />} title="Einstellungen">
@@ -105,34 +123,63 @@ export function MorePage() {
       </Section>
 
       <Section icon={<Database />} title="Daten">
-        <button
-          type="button"
-          onClick={handleClearCache}
-          className="btn-secondary w-full"
-        >
-          <Trash2 size={18} className="inline mr-1" /> Lokalen Cache leeren
-        </button>
-        <p className="mt-2 text-xs text-ink-500">
-          Hinweis: Beim Leeren werden nur die Browser-Daten entfernt.
-          Server-Daten bleiben unverändert.
-        </p>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleClearCache}
+            className="btn btn-secondary btn-sm"
+          >
+            <Trash2 size={14} />
+            Cache leeren
+          </button>
+          <p className="flex-1 text-xs text-ink-500">
+            Entfernt nur Browser-Daten; Server bleibt unberührt.
+          </p>
+        </div>
       </Section>
 
-      <Section icon={<FileDown />} title="Export">
-        <a
-          href="http://localhost:8000/api/products/export?format=csv"
-          className="btn-secondary w-full"
-          download
-        >
-          CSV-Export herunterladen
-        </a>
-        <a
-          href="http://localhost:8000/api/products/export?format=json"
-          className="btn-secondary w-full"
-          download
-        >
-          JSON-Export herunterladen
-        </a>
+      <Section icon={<FileText />} title="Export">
+        <div className="grid grid-cols-2 gap-2">
+          <a
+            href="http://localhost:8000/api/products/export?format=csv"
+            className="btn btn-secondary"
+            download
+            aria-label="Preisliste als CSV herunterladen"
+          >
+            <FileText size={16} />
+            <span>CSV</span>
+          </a>
+          <a
+            href="http://localhost:8000/api/products/export?format=json"
+            className="btn btn-secondary"
+            download
+            aria-label="Preisliste als JSON herunterladen"
+          >
+            <FileJson size={16} />
+            <span>JSON</span>
+          </a>
+          <a
+            href="http://localhost:8000/api/products/export?format=xlsx"
+            className="btn btn-secondary"
+            download
+            aria-label="Preisliste als XLSX herunterladen"
+          >
+            <Database size={16} />
+            <span>XLSX</span>
+          </a>
+          <a
+            href="http://localhost:8000/api/products/export?format=pdf"
+            className="btn btn-secondary"
+            download
+            aria-label="Preisliste als PDF herunterladen"
+          >
+            <FileText size={16} />
+            <span>PDF</span>
+          </a>
+        </div>
+        <p className="mt-2 text-xs text-ink-500">
+          Vollständiger Export deiner Preisliste. Datei wird heruntergeladen.
+        </p>
       </Section>
 
       <Section icon={<Info />} title="Über">
