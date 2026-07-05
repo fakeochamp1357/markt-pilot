@@ -1,15 +1,24 @@
 import axios, { type AxiosInstance, type RawAxiosRequestHeaders } from 'axios';
 import type {
+  AnalyticsPeriod,
+  AnalyticsSortBy,
   Category,
+  DashboardSummary,
+  DeadStockRow,
   ExpiringProduct,
+  ExpiryAlert,
   LowStockProduct,
+  MarginRow,
+  NotificationItem,
   Product,
   ProductListResponse,
   Receipt,
   ReceiptCreatePayload,
+  ReorderAlert,
   StockMovement,
   StockMovementList,
   StockReason,
+  TopSeller,
 } from '@/types/api';
 
 const BASE_URL = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000/api';
@@ -187,5 +196,71 @@ export async function getReceiptByNumber(number: string): Promise<Receipt> {
 /** Storniert einen Bon — erzeugt einen Gegenbon und stellt Bestand wieder her. */
 export async function voidReceipt(id: number): Promise<Receipt> {
   const { data } = await api.post<Receipt>(`/receipts/${id}/void`);
+  return data;
+}
+
+// ---------- Analytics ----------
+export async function getTopSellers(params?: {
+  period?: AnalyticsPeriod;
+  limit?: number;
+  sort_by?: AnalyticsSortBy;
+}): Promise<TopSeller[]> {
+  const { data } = await api.get<TopSeller[]>('/analytics/top-sellers', { params });
+  return data;
+}
+
+export async function getMargins(params?: {
+  period?: AnalyticsPeriod;
+  limit?: number;
+  only_with_sales?: boolean;
+}): Promise<MarginRow[]> {
+  const { data } = await api.get<MarginRow[]>('/analytics/margins', { params });
+  return data;
+}
+
+export async function getDeadStock(params?: {
+  period?: AnalyticsPeriod;
+  limit?: number;
+  include_zero_stock?: boolean;
+}): Promise<DeadStockRow[]> {
+  const { data } = await api.get<DeadStockRow[]>('/analytics/dead-stock', { params });
+  return data;
+}
+
+export async function getExpiryAlerts(params?: {
+  warn_days?: number;
+  include_expired?: boolean;
+  limit?: number;
+}): Promise<ExpiryAlert[]> {
+  const { data } = await api.get<ExpiryAlert[]>('/analytics/expiry-alerts', { params });
+  return data;
+}
+
+export async function getReorderAlerts(params?: {
+  include_zero_min?: boolean;
+  limit?: number;
+}): Promise<ReorderAlert[]> {
+  const { data } = await api.get<ReorderAlert[]>('/analytics/reorder-alerts', { params });
+  return data;
+}
+
+export async function getDashboardSummary(params?: {
+  period?: AnalyticsPeriod;
+  warn_days?: number;
+}): Promise<DashboardSummary> {
+  const { data } = await api.get<DashboardSummary>('/analytics/dashboard/summary', {
+    params,
+  });
+  return data;
+}
+
+export async function getNotifications(params?: {
+  period?: AnalyticsPeriod;
+  warn_days?: number;
+  limit?: number;
+}): Promise<NotificationItem[]> {
+  const { data } = await api.get<NotificationItem[]>('/analytics/notifications', {
+    params,
+  });
   return data;
 }

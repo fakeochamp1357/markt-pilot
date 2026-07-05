@@ -315,6 +315,183 @@ class ExpiringProduct(BaseModel):
         )
 
 
+
+# ---------------------------------------------------------------------------
+# Analytics
+# ---------------------------------------------------------------------------
+
+
+class TopSeller(BaseModel):
+    """Ein meistverkauftes Produkt in einem Zeitraum."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    product_id: int
+    name: str
+    qty_sold: Decimal
+    revenue: PriceDecimal
+    margin: PriceDecimal
+    margin_pct: Decimal
+
+    @classmethod
+    def from_dc(cls, obj) -> "TopSeller":
+        return cls(
+            product_id=obj.product_id,
+            name=obj.name,
+            qty_sold=Decimal(obj.qty_sold),
+            revenue=cents_to_decimal(obj.revenue_cents),
+            margin=cents_to_decimal(obj.margin_cents),
+            margin_pct=Decimal(obj.margin_pct),
+        )
+
+
+class MarginRow(BaseModel):
+    """Marge pro Produkt — sortiert nach absoluter Marge."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    product_id: int
+    name: str
+    qty_sold: Decimal
+    revenue: PriceDecimal
+    cost: PriceDecimal
+    margin: PriceDecimal
+    margin_pct: Decimal
+
+    @classmethod
+    def from_dc(cls, obj) -> "MarginRow":
+        return cls(
+            product_id=obj.product_id,
+            name=obj.name,
+            qty_sold=Decimal(obj.qty_sold),
+            revenue=cents_to_decimal(obj.revenue_cents),
+            cost=cents_to_decimal(obj.cost_cents),
+            margin=cents_to_decimal(obj.margin_cents),
+            margin_pct=Decimal(obj.margin_pct),
+        )
+
+
+class DeadStockRow(BaseModel):
+    """Produkt ohne Verkäufe im Zeitraum — 'Ladenhüter'."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    product_id: int
+    name: str
+    sku: str | None
+    last_sale_at: datetime | None
+    days_since_last_sale: int | None
+    stock_quantity: Decimal
+    stock_value: PriceDecimal
+
+    @classmethod
+    def from_dc(cls, obj) -> "DeadStockRow":
+        return cls(
+            product_id=obj.product_id,
+            name=obj.name,
+            sku=obj.sku,
+            last_sale_at=obj.last_sale_at,
+            days_since_last_sale=obj.days_since_last_sale,
+            stock_quantity=Decimal(obj.stock_quantity),
+            stock_value=cents_to_decimal(obj.stock_value_cents),
+        )
+
+
+class ExpiryAlert(BaseModel):
+    """MHD-Warnung — entweder 'bald ablaufend' oder 'abgelaufen'."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    product_id: int
+    name: str
+    expiry_date: date
+    days_until_expiry: int
+    stock_quantity: Decimal
+    severity: Literal["info", "warn", "danger"]
+
+    @classmethod
+    def from_dc(cls, obj) -> "ExpiryAlert":
+        return cls(
+            product_id=obj.product_id,
+            name=obj.name,
+            expiry_date=obj.expiry_date,
+            days_until_expiry=obj.days_until_expiry,
+            stock_quantity=Decimal(obj.stock_quantity),
+            severity=obj.severity,
+        )
+
+
+class ReorderAlert(BaseModel):
+    """Nachbestell-Vorschlag."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    product_id: int
+    name: str
+    sku: str | None
+    stock_quantity: Decimal
+    min_stock_level: Decimal
+    deficit: Decimal
+    suggested_order_qty: Decimal
+
+    @classmethod
+    def from_dc(cls, obj) -> "ReorderAlert":
+        return cls(
+            product_id=obj.product_id,
+            name=obj.name,
+            sku=obj.sku,
+            stock_quantity=Decimal(obj.stock_quantity),
+            min_stock_level=Decimal(obj.min_stock_level),
+            deficit=Decimal(obj.deficit),
+            suggested_order_qty=Decimal(obj.suggested_order_qty),
+        )
+
+
+class DashboardSummary(BaseModel):
+    """Aggregierte KPIs für den Dashboard-Tab."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    total_active_products: int
+    total_inventory_value: PriceDecimal
+    total_sales_period: PriceDecimal
+    total_margin_period: PriceDecimal
+    units_sold_period: Decimal
+    expiry_soon_count: int
+    expired_count: int
+    reorder_count: int
+    dead_stock_count: int
+    period: str
+
+    @classmethod
+    def from_dc(cls, obj) -> "DashboardSummary":
+        return cls(
+            total_active_products=obj.total_active_products,
+            total_inventory_value=cents_to_decimal(obj.total_inventory_value_cents),
+            total_sales_period=cents_to_decimal(obj.total_sales_period_cents),
+            total_margin_period=cents_to_decimal(obj.total_margin_period_cents),
+            units_sold_period=Decimal(obj.units_sold_period),
+            expiry_soon_count=obj.expiry_soon_count,
+            expired_count=obj.expired_count,
+            reorder_count=obj.reorder_count,
+            dead_stock_count=obj.dead_stock_count,
+            period=obj.period,
+        )
+
+
+class NotificationItem(BaseModel):
+    """Eine aggregierte Notification (für Badge / Banner im UI)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    type: Literal["expiry_soon", "expired", "reorder", "dead_stock"]
+    severity: Literal["info", "warn", "danger"]
+    product_id: int
+    product_name: str
+    message: str
+    created_at: datetime
+
+
 # ---------------------------------------------------------------------------
 # Receipt / POS
 # ---------------------------------------------------------------------------
@@ -423,6 +600,13 @@ __all__ = [
     "ReceiptLineCreate",
     "ReceiptLineRead",
     "ReceiptRead",
+    "TopSeller",
+    "MarginRow",
+    "DeadStockRow",
+    "ExpiryAlert",
+    "ReorderAlert",
+    "DashboardSummary",
+    "NotificationItem",
     "cents_to_decimal",
     "decimal_to_cents",
 ]

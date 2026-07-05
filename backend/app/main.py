@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 
 from app.db.session import Base, engine
-from app.routers import categories, products, receipts, stock
+from app.routers import analytics, categories, products, receipts, stock
 
 # Modelle registrieren (müssen vor ``create_all`` importiert sein)
 import app.models  # noqa: F401
@@ -140,3 +140,4 @@ app.include_router(products.router)
 app.include_router(categories.router)
 app.include_router(stock.router)
 app.include_router(receipts.router)
+app.include_router(analytics.router)

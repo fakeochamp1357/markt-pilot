@@ -167,3 +167,81 @@ export interface ReceiptCreatePayload {
     comment?: string | null;
   }[];
 }
+
+// ---------------------------------------------------------------------------
+// Analytics
+// ---------------------------------------------------------------------------
+
+export type AnalyticsPeriod = 'week' | 'month' | 'quarter' | 'year' | 'all';
+export type AnalyticsSeverity = 'info' | 'warn' | 'danger';
+export type AnalyticsSortBy = 'qty' | 'revenue' | 'margin';
+
+export interface TopSeller {
+  product_id: number;
+  name: string;
+  qty_sold: string;
+  revenue: string; // EUR
+  margin: string; // EUR
+  margin_pct: string;
+}
+
+export interface MarginRow {
+  product_id: number;
+  name: string;
+  qty_sold: string;
+  revenue: string;
+  cost: string;
+  margin: string;
+  margin_pct: string;
+}
+
+export interface DeadStockRow {
+  product_id: number;
+  name: string;
+  sku: string | null;
+  last_sale_at: string | null;
+  days_since_last_sale: number | null;
+  stock_quantity: string;
+  stock_value: string;
+}
+
+export interface ExpiryAlert {
+  product_id: number;
+  name: string;
+  expiry_date: string;
+  days_until_expiry: number;
+  stock_quantity: string;
+  severity: AnalyticsSeverity;
+}
+
+export interface ReorderAlert {
+  product_id: number;
+  name: string;
+  sku: string | null;
+  stock_quantity: string;
+  min_stock_level: string;
+  deficit: string;
+  suggested_order_qty: string;
+}
+
+export interface DashboardSummary {
+  total_active_products: number;
+  total_inventory_value: string;
+  total_sales_period: string;
+  total_margin_period: string;
+  units_sold_period: string;
+  expiry_soon_count: number;
+  expired_count: number;
+  reorder_count: number;
+  dead_stock_count: number;
+  period: AnalyticsPeriod;
+}
+
+export interface NotificationItem {
+  type: 'expiry_soon' | 'expired' | 'reorder' | 'dead_stock';
+  severity: AnalyticsSeverity;
+  product_id: number;
+  product_name: string;
+  message: string;
+  created_at: string;
+}

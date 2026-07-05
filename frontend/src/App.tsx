@@ -4,6 +4,7 @@ import { PreislistePage } from '@/pages/PreislistePage';
 import { InventoryPage } from '@/pages/InventoryPage';
 import { CategoriesPage } from '@/pages/CategoriesPage';
 import { ScannerPage } from '@/pages/ScannerPage';
+import { AnalyticsPage } from '@/pages/AnalyticsPage';
 import { MorePage } from '@/pages/MorePage';
 import { POSPage } from '@/pages/POSPage';
 import { ReceiptsPage } from '@/pages/ReceiptsPage';
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/scanner" element={<ScannerPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/more" element={<MorePage />} />
         <Route path="/receipts" element={<ReceiptsPage />} />
         <Route path="*" element={<POSPage />} />

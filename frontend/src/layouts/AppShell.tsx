@@ -8,6 +8,7 @@ const TITLES: Record<string, string> = {
   '/inventory': 'Warenbestand',
   '/categories': 'Kategorien',
   '/scanner': 'Scanner',
+  '/analytics': 'Analyse',
   '/more': 'Mehr',
   '/receipts': 'Kassenbuch',
 };

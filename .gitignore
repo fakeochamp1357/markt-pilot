@@ -45,6 +45,7 @@ nav.json
 shoot.mjs
 snap.mjs
 flow.mjs
+demo_screenshots/
 
 # --- Nested old GitHub clone (was here before init) ---
 markt-pilot-main/
