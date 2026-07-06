@@ -1,7 +1,13 @@
 """Tests fuer POS / Kassenbons."""
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from decimal import Decimal
+
+
+def _today_compact() -> str:
+    """YYYYMMDD für heute — die receipt_number wird so generiert."""
+    return datetime.now(timezone.utc).strftime("%Y%m%d")
 
 
 def _make_category(client, name="Getränke"):
@@ -74,7 +80,7 @@ def test_create_sale_basic_no_deposit(client):
     resp = client.post("/api/receipts", json=payload)
     assert resp.status_code == 201, resp.text
     receipt = resp.json()
-    assert receipt["receipt_number"].startswith("20260701-")
+    assert receipt["receipt_number"].startswith(_today_compact() + "-")
     assert receipt["total_cents"] == 179
     assert receipt["kind"] == "sale"
     assert len(receipt["lines"]) == 1
