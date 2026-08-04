@@ -1,0 +1,33 @@
+# MarktPilot Backend — systemd Service Unit
+#
+# Wird vom setup-pi.sh Script automatisch installiert mit korrekten Pfaden
+# fuer deinen User. Diese Datei hier dient nur als Referenz / Vorlage.
+#
+# Manuell installieren (z.B. nach Anpassungen):
+#   sudo cp scripts/marktpilot-backend.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now marktpilot-backend
+
+[Unit]
+Description=MarktPilot Backend (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+# Wird vom Setup-Script ersetzt durch den echten User (per `SUDO_USER`).
+User=pi
+# Wird vom Setup-Script ersetzt durch den absoluten Repo-Pfad.
+WorkingDirectory=/home/pi/markt-pilot/backend
+Environment=PATH=/home/pi/markt-pilot/backend/.venv/bin:/usr/bin:/bin
+ExecStart=/home/pi/markt-pilot/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=3
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/pi/markt-pilot/backend
+
+[Install]
+WantedBy=multi-user.target
