@@ -18,6 +18,7 @@ import { resetFailedOutboxEntries, syncOutboxOnce } from '@/hooks/useOutboxSync'
 import { useAppStore } from '@/store';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { ROOT_URL } from '@/api/client';
 
 function statusLabel(
   isOnline: boolean,
@@ -47,7 +48,18 @@ export function MorePage() {
   const outboxCount = useAppStore((s) => s.outboxCount);
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
+  const [includeInactive, setIncludeInactive] = useState(false);
   const status = statusLabel(isOnline, backendReachable);
+
+  /** Baut die Export-URL. Mit includeInactive=true wird der active-Filter
+   *  weggelassen, sodass auch soft-geloeschte Produkte enthalten sind. */
+  const exportUrl = (format: 'csv' | 'json' | 'xlsx' | 'pdf') => {
+    const params = new URLSearchParams({ format });
+    if (includeInactive) {
+      params.set('active', 'false');
+    }
+    return `${ROOT_URL}/api/products/export?${params.toString()}`;
+  };
 
   const handleSync = async () => {
     setBusy(true);
@@ -156,7 +168,7 @@ export function MorePage() {
       <Section icon={<FileText />} title="Export">
         <div className="grid grid-cols-2 gap-2">
           <a
-            href="http://localhost:8000/api/products/export?format=csv"
+            href={exportUrl('csv')}
             className="btn btn-secondary"
             download
             aria-label="Preisliste als CSV herunterladen"
@@ -165,7 +177,7 @@ export function MorePage() {
             <span>CSV</span>
           </a>
           <a
-            href="http://localhost:8000/api/products/export?format=json"
+            href={exportUrl('json')}
             className="btn btn-secondary"
             download
             aria-label="Preisliste als JSON herunterladen"
@@ -174,7 +186,7 @@ export function MorePage() {
             <span>JSON</span>
           </a>
           <a
-            href="http://localhost:8000/api/products/export?format=xlsx"
+            href={exportUrl('xlsx')}
             className="btn btn-secondary"
             download
             aria-label="Preisliste als XLSX herunterladen"
@@ -183,7 +195,7 @@ export function MorePage() {
             <span>XLSX</span>
           </a>
           <a
-            href="http://localhost:8000/api/products/export?format=pdf"
+            href={exportUrl('pdf')}
             className="btn btn-secondary"
             download
             aria-label="Preisliste als PDF herunterladen"
@@ -192,6 +204,20 @@ export function MorePage() {
             <span>PDF</span>
           </a>
         </div>
+        <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-ink-600">
+          <input
+            type="checkbox"
+            checked={includeInactive}
+            onChange={(e) => setIncludeInactive(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            Auch inaktive (gelöschte) Produkte einschließen.{' '}
+            <span className="text-xs text-ink-500">
+              Normalerweise werden nur aktive Produkte exportiert.
+            </span>
+          </span>
+        </label>
         <p className="mt-2 text-xs text-ink-500">
           Vollständiger Export deiner Preisliste. Datei wird heruntergeladen.
         </p>

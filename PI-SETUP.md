@@ -1,7 +1,19 @@
-# MarktPilot auf dem Raspberry Pi 4
+# MarktPilot — Server-Pi einrichten (Pi #1)
 
-Stand: 2026-08-04 — Pi 4 mit **Fedora Workstation (ARM)**, getesteter Plan.
-Ziel: zentraler Sync-Server **und** Kassen-Terminal in einem Gerät.
+Stand: 2026-08-10 — Raspberry Pi 5 mit **Fedora Workstation (ARM)**.
+Ziel: **zentraler Server, läuft 24/7**. Hält die SQLite-DB und das Backend.
+
+Diese Pi ist **nur Server** — kein Bildschirm, keine Tastatur, kein
+Kassen-Betrieb nötig. Die Kasse läuft auf einer zweiten Pi (Pi #2), siehe
+[`KASSE-PI-SETUP.md`](KASSE-PI-SETUP.md).
+
+> **Architektur-Überblick:**
+> - **Pi #1 (diese Anleitung):** Server, headless, 24/7
+> - **Pi #2 ([KASSE-PI-SETUP.md](KASSE-PI-SETUP.md)):** Kassen-Terminal mit Touchscreen + USB-Hardware
+> - **PC/Laptop:** Verwaltungs-Client (Browser, geht auf Pi #1 zum Warenbestand pflegen)
+>
+> Wenn die Server-Pi mal ausfällt und du schnell Ersatz brauchst, kann der
+> Laptop übergangsweise als Server laufen — siehe [`LAPTOP-SETUP.md`](LAPTOP-SETUP.md).
 
 > **Wichtig:** Dieses Repo hat aktuell **keinen automatischen Daten-Sync** zwischen
 > Clients. Der Pi als zentrales Backend heißt: alle Geräte sehen die gleichen

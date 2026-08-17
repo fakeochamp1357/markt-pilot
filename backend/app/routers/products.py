@@ -273,7 +273,9 @@ async def bulk_upload(
 @router.get("/export", response_class=Response)
 def export_products(
     format: str = Query("csv", pattern="^(csv|xlsx|pdf|json)$"),
-    active: bool | None = Query(None),
+    # Default = nur aktive Produkte. Wer explizit ALLE (inkl. geloeschte)
+    # will, muss ?active=false oder ?active= (ohne Wert) mitschicken.
+    active: bool = Query(True),
     category: int | None = Query(None),
     db: Session = Depends(get_db),
 ):

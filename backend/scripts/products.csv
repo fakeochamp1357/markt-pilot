@@ -1,0 +1,26 @@
+id,sku,barcode,name,category_id,unit,size_weight,cost_price,sell_price,currency,stock_quantity,min_stock_level,expiry_date,supplier,is_active,color_tag
+12,OG-BAN-1KG,4015001000008,Bananen (Fairtrade),3,kg,1kg,1.10,1.99,EUR,15.500,5.000,2026-07-04,Fairtrade-Bananen,false,#FACC15
+6,GET-BEC-05,4100130992007,Beck's Pils,2,Stück,500ml,0.65,1.39,EUR,34.000,10.000,2026-10-27,Brauerei Beck's,false,#FACC15
+2,GET-COCA-05,5449000000996,Coca-Cola Original,2,Stück,500ml,0.55,1.29,EUR,48.000,12.000,2026-12-26,Coca-Cola Europacific Partners,false,#EF4444
+3,GET-COCAZ-05,5449000131836,Coca-Cola Zero,2,Stück,500ml,0.55,1.29,EUR,36.000,12.000,2027-02-24,Coca-Cola Europacific Partners,false,#1F2937
+23,,5000112637403,Curl Vimto,,Stück,,0.40,1.00,EUR,103.000,0.000,,,false,#3B82F6
+24,,,Digestive,6,Packung,300g,0.00,2.30,EUR,50.000,10.000,,,true,#3B82F6
+20,SS-HAR-200,4001686301027,Haribo Goldbären,6,Packung,200g,0.65,1.29,EUR,35.000,10.000,2027-06-29,Haribo,false,#FACC15
+16,BW-BR-6,4008452001026,Harry Brötchen (6 Stk.),5,Packung,6 Stück,0.95,1.79,EUR,14.000,4.000,2026-06-30,Harry-Brot,false,#D97706
+10,MIL-FETA-200,20064044,Hirtenkäse / Feta,4,Stück,200g,1.40,2.79,EUR,18.000,6.000,2026-07-13,Hochland,false,#FEF3C7
+9,MIL-JOG-500,4014400900060,"Ja! Naturjoghurt 3,5%",4,Stück,500g,0.45,0.89,EUR,40.000,12.000,2026-07-09,REWE,false,#FAFAF9
+11,MIL-BUT-250,5012345678900,Kerrygold Butter,4,Stück,250g,1.55,2.49,EUR,25.000,8.000,2026-07-29,Kerrygold / Ornua,false,#FDE68A
+21,SS-KIND-100,4014400900084,Kinderschokolade,6,Stück,100g (8 Riegel),0.95,1.79,EUR,20.000,6.000,2026-12-26,Ferrero,false,#9333EA
+19,SS-LAYS-150,0028400090054,Lay's Classic Chips,6,Packung,150g,0.85,1.69,EUR,28.000,8.000,2026-09-27,PepsiCo Deutschland,false,#FDE047
+15,BW-BROT-500,4008452001019,Lieken Urkorn Brot,5,Stück,500g,1.20,2.29,EUR,20.000,6.000,2026-07-02,Lieken,false,#92400E
+17,SS-MILKA-100,7622210449283,Milka Alpenmilch Schokolade,6,Stück,100g,0.95,1.79,EUR,40.000,10.000,2026-10-27,Mondelez Deutschland,false,#7C3AED
+7,MIL-MIL-1L,4025500011017,"Müller Milch 3,5%",4,Stück,1L,0.85,1.49,EUR,30.000,10.000,2026-07-06,Müller Milch,false,#FFFFFF
+8,MIL-MILF-1L,4025500011031,"Müller Milch fettarm 1,5%",4,Stück,1L,0.85,1.49,EUR,24.000,10.000,2026-07-04,Müller Milch,false,#F0FDF4
+25,,,Pindakaas,7,Packung,500g,0.00,3.30,EUR,30.000,10.000,,,true,#3B82F6
+18,SS-PRINZ-200,4001686301010,Prinzen Rolle Keks,6,Packung,200g,0.75,1.49,EUR,22.000,6.000,2026-11-26,Prinzen Rolle,false,#FB923C
+4,GET-RB-025,90415465,Red Bull Energy Drink,2,Stück,250ml,0.90,1.79,EUR,24.000,6.000,2027-04-25,Red Bull Deutschland,false,#1E3A8A
+14,OG-TOM-500,4015001000022,Tomaten Strauchtomaten,3,kg,500g,1.40,2.89,EUR,3.500,5.000,2026-07-05,Niederländische Erzeugergemeinschaft,false,#B91C1C
+22,,,Vimto,2,Stück,330m,0.75,1.00,EUR,23.000,10.000,2028-08-21,,true,#3B82F6
+5,GET-VIT-15,3052671006050,Vittel Mineralwasser,2,Stück,1.5L,0.30,0.89,EUR,60.000,15.000,2027-12-21,Vittel / Nestlé Waters,false,#0EA5E9
+1,,,wasser,,Stück,250ml,0.50,1.00,EUR,0.000,0.000,,,true,#3B82F6
+13,OG-APF-1KG,4015001000015,Äpfel Elstar (Kl. I),3,kg,1kg,1.30,2.49,EUR,22.000,5.000,2026-07-13,Altes Land,false,#DC2626

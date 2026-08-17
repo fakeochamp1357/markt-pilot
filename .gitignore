@@ -56,3 +56,10 @@ frontend/.vite/
 
 # --- Backend build artifacts ---
 backend/.pytest_cache/
+# SQLite-Backups die vom Hard-Delete-Skript erzeugt werden
+*.db.bak-*
+
+
+# TypeScript Build-Artefakte
+*.tsbuildinfo
+
