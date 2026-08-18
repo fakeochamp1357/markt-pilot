@@ -1,0 +1,34 @@
+# systemd-Unit fuer den MarktPilot-Kiosk auf der Kassen-Pi.
+#
+# Wird beim Boot automatisch gestartet UND restartet Chromium, falls es
+# abstuerzt oder von Hand gekillt wird. Das ist robuster als ein simpler
+# GNOME-Autostart-Eintrag, weil systemd den Prozess aktiv ueberwacht.
+#
+# Install:
+#   1. Diese Datei nach /etc/systemd/system/marktpilot-kiosk.service kopieren
+#   2. sudo systemctl daemon-reload
+#   3. sudo systemctl enable --now marktpilot-kiosk.service
+#   4. Status checken: systemctl status marktpilot-kiosk.service
+#
+# Vorher: alter GNOME-Autostart raus, sonst startet Chromium doppelt:
+#   rm -f ~/.config/autostart/marktpilot-kiosk.desktop
+#
+# Display=DISPLAY=:0 ist noetig, damit Chromium im graphischen TTY7 startet
+# (nicht in einem headless-Text-Modus haengen bleibt).
+#
+# Bei Display-Manager-Wechsel (z.B. lightdm -> gdm3) den User ggf. anpassen.
+
+[Unit]
+Description=MarktPilot Kiosk (Chromium)
+After=graphical.target
+
+[Service]
+User=globia1
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/chromium --kiosk --noerrdialogs --disable-infobars --disable-features=Translate http://localhost:8080
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=graphical.target

@@ -1,12 +1,16 @@
 # MarktPilot — Kassen-Pi einrichten (Pi #2)
 
-Stand: 2026-08-10
+Stand: 2026-08-18
 Ziel: Eine Raspberry Pi 5 mit Touchscreen-Monitor und USB-Hardware (Drucker,
 Scanner, Schublade) als autarkes Kassen-Terminal.
 
-> **Voraussetzung:** Der Laptop-Server läuft und ist unter `http://192.168.2.196:8000`
-> erreichbar. Siehe [`LAPTOP-SETUP.md`](LAPTOP-SETUP.md).
-> `http://<PI-SERVER-IP>:8000` erreichbar. Siehe `PI-SETUP.md`.
+> **Voraussetzung:** Der Laptop-Server läuft und ist unter `http://192.168.2.76:8000`
+> (oder der aktuellen Laptop-IP im LAN) erreichbar. Siehe [`LAPTOP-SETUP.md`](LAPTOP-SETUP.md).
+>
+> **Wichtig (Stand 2026-08-18):** Wir haben das Frontend auf **relative URLs**
+> (`VITE_API_BASE = "/api"`) umgestellt. nginx auf der Pi proxt jetzt
+> `/api/*` an den Laptop. Bei einem IP-Wechsel des Laptops muss nur **eine
+> Zeile** in der nginx-Config angepasst werden — kein Re-Build.
 
 ---
 
@@ -44,8 +48,8 @@ Am PC (Windows / macOS / Linux):
      (für Kiosk mit Chromium brauchst du den Desktop, nicht Lite)
    - **Storage:** deine SD-Karte
 4. ⚙️ **Erweiterte Optionen** (Zahnrad-Symbol):
-   - Hostname: `marktpilot-kasse`
-   - Username + Passwort setzen (z.B. `kasse` / sicheres Passwort)
+   - Hostname: `marktpilot-kasse` (oder behalte deinen Pi-Default)
+   - Username + Passwort setzen (z.B. `globia1` / sicheres Passwort)
    - **WLAN-SSID + Passwort** eintragen ODER LAN benutzen
    - **SSH aktivieren:** „Enable SSH" + „Use password authentication"
 5. **Schreiben** klicken — dauert 5–10 Min
@@ -61,9 +65,9 @@ Am PC (Windows / macOS / Linux):
 Vom PC/Laptop im LAN:
 
 ```bash
-ssh kasse@marktpilot-kasse.local
+ssh globia1@marktpilot-kasse.local
 # oder, falls mDNS nicht klappt:
-ssh kasse@<IP-der-Pi>   # findest du im Router oder mit `hostname -I` an der Pi
+ssh globia1@<IP-der-Pi>   # findest du im Router oder mit `hostname -I` an der Pi
 ```
 
 Ab jetzt kannst du alle weiteren Schritte **per SSH** machen — kein Monitor
@@ -78,8 +82,8 @@ sudo reboot
 
 ### 1.5 Feste IP im Router
 
-Genau wie beim Laptop-Server (192.168.2.196): in der Router-Admin-Oberfläche der Kassen-Pi eine
-**feste LAN-IP** geben (z.B. `192.168.2.51`). Sonst findet der Laptop-Server (192.168.2.196) die
+Genau wie beim Laptop-Server (192.168.2.76): in der Router-Admin-Oberfläche der Kassen-Pi eine
+**feste LAN-IP** geben (z.B. `192.168.2.51`). Sonst findet der Laptop-Server (192.168.2.76) die
 Kasse später nicht zuverlässig.
 
 ---
@@ -90,13 +94,19 @@ Das Frontend läuft im Browser der Kassen-Pi. Wir bauen es **am PC** und
 kopieren nur das fertige Bundle auf die Pi — schneller als alles auf der
 kleinen Pi zu kompilieren.
 
-### 2.1 Am PC: Frontend production-builden
+### 2.1 Am PC: Frontend production-builden (mit relativen URLs)
+
+Wir bauen das Frontend so, dass es **nicht** die Laptop-IP kennt. Stattdessen
+gehen alle API-Calls über den nginx-Proxy auf der Kassen-Pi. Vorteil: wenn
+du den Laptop in einen anderen Markt umziehst und eine neue IP bekommst,
+musst du nur **eine** Zeile in der nginx-Config auf der Pi ändern — kein
+Re-Build, kein Re-Deploy.
 
 ```powershell
 cd C:\Repos\markt-pilot\frontend
 
-# API-URL auf den SERVER-Pi setzen (nicht die Kassen-Pi!)
-$env:VITE_API_BASE = "http://192.168.2.196:8000"
+# "/" als Base: Frontend ruft /api/products, nginx schickt's ans Backend
+$env:VITE_API_BASE = "/api"
 cmd /c npm run build
 # → erzeugt dist/ Ordner
 ```
@@ -105,7 +115,7 @@ cmd /c npm run build
 
 ```powershell
 # Vom PC aus
-scp -r C:\Repos\markt-pilot\frontend\dist\* kasse@192.168.2.51:~/markt-pilot-frontend/
+scp -r C:\Repos\markt-pilot\frontend\dist\* globia1@192.168.2.51:~/markt-pilot-frontend/
 ```
 
 Falls `scp` auf Windows nicht klappt (PowerShell hat es erst ab Windows 10
@@ -124,21 +134,32 @@ server {
     listen 8080;
     server_name _;
 
-    root /home/kasse/marktpilot-frontend;
-    index index.html;
+    root /home/globia1/marktpilot-frontend;
+
+    # KEIN "index index.html;" — würde zusammen mit try_files eine
+    # Endlosschleife auslösen (rewrite cycle).
 
     location / {
         try_files $uri $uri/ /index.html;
     }
 
-    # Optional: API-Proxy — wenn du /api/ statt VITE_API_BASE nutzen willst
+    # Pflicht: API-Proxy. Frontend ruft /api/... (relativ) und nginx
+    # schickt's an den Laptop. Laptop-IP bei IP-Wechsel hier anpassen.
     location /api/ {
-        proxy_pass http://192.168.2.196:8000/api/;
+        proxy_pass http://192.168.2.76:8000/api/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
 }
 ```
+
+> **Wenn die Laptop-IP sich ändert** (neuer Standort, neuer Router): nur
+> diese eine Zeile ändern und nginx reloaden:
+>
+> ```bash
+> sudo sed -i 's#192.168.2.76#NEUE_LAPTOP_IP#g' /etc/nginx/sites-available/marktpilot
+> sudo nginx -t && sudo systemctl reload nginx
+> ```
 
 Aktivieren:
 
@@ -150,32 +171,66 @@ sudo systemctl reload nginx
 ```
 
 Test im Browser: `http://192.168.2.51:8080/` → deine MarktPilot-UI mit
-Daten vom Laptop-Server (192.168.2.196).
+Daten vom Laptop-Server (192.168.2.76).
 
 ---
 
-## Phase 3 — Kiosk-Mode (Browser im Vollbild, Auto-Start) (~15 Min)
+## Phase 3 — Kiosk-Mode (Browser im Vollbild, Auto-Start + Auto-Restart) (~15 Min)
 
-### 3.1 Chromium für Kiosk konfigurieren
+Wir benutzen **systemd** statt GNOME-Autostart, weil systemd den Browser
+aktiv überwacht: wenn Chromium crasht oder jemand es per SSH killt, startet
+es innerhalb von 5 Sekunden automatisch neu. Für eine Kasse, die einfach
+durchlaufen soll, essentiell.
+
+### 3.1 systemd-Service-Datei installieren
+
+Die Service-Datei liegt im Repo unter `scripts/marktpilot-kiosk.service`.
+Sie enthält die richtigen Pfade + Flags für Chromium im Kiosk-Mode.
 
 ```bash
-mkdir -p ~/.config/autostart
-nano ~/.config/autostart/marktpilot-kiosk.desktop
+# Service-Datei aufs Pi holen (vom Laptop aus, oder per git pull auf der Pi)
+scp scripts/marktpilot-kiosk.service globia1@192.168.2.51:/tmp/
+
+# Auf der Pi:
+sudo mv /tmp/marktpilot-kiosk.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now marktpilot-kiosk.service
 ```
 
-Inhalt:
+Alten GNOME-Autostart löschen, falls noch vorhanden (sonst startet Chromium doppelt):
 
-```ini
-[Desktop Entry]
-Type=Application
-Name=MarktPilot Kasse
-Exec=/usr/bin/chromium --kiosk --noerrdialogs --disable-infobars --disable-pinch --overscroll-history-navigation=0 --check-for-update-interval=31536000 http://localhost:8080/
-X-GNOME-Autostart-enabled=true
+```bash
+rm -f ~/.config/autostart/marktpilot-kiosk.desktop
 ```
+
+### 3.2 Status checken
+
+```bash
+systemctl status marktpilot-kiosk.service
+# Sollte "active (running)" zeigen
+```
+
+Falls der Service nicht startet, ins Log schauen:
+
+```bash
+sudo journalctl -u marktpilot-kiosk.service -f
+```
+
+### 3.3 TTY-Notfall-Workflow
+
+Wenn das Kassen-Display hängt, der Browser aber nicht reagiert:
+
+| Shortcut | Wirkung |
+|---|---|
+| `Ctrl+Alt+F7` | zurück zur graphischen Oberfläche (wo Chromium läuft) |
+| `Ctrl+Alt+F1` | Text-Login (TTY1) — bash zum Debuggen |
+| `pkill -f chromium` (in TTY1) | killt Chromium → systemd startet sofort neu |
+| `sudo systemctl restart marktpilot-kiosk.service` | sauberer Restart |
+| `sudo reboot` | kompletter Neustart |
 
 > **Wichtig:** Die URL ist `http://localhost:8080/`, **nicht** die
-> Laptop-Server (192.168.2.196)-IP. nginx auf der Kassen-Pi selbst bedient das Frontend und
-> proxiet `/api/` an die Laptop-Server (192.168.2.196).
+> Laptop-IP. nginx auf der Kassen-Pi selbst bedient das Frontend und
+> proxiet `/api/` an den Laptop.
 
 ### 3.2 Touchscreen kalibrieren (optional)
 
@@ -229,7 +284,7 @@ sudo reboot
 1. Desktop erscheint
 2. Browser öffnet sich automatisch im Vollbild
 3. MarktPilot-UI lädt
-4. Du siehst die Produkte vom Laptop-Server (192.168.2.196)
+4. Du siehst die Produkte vom Laptop-Server (192.168.2.76)
 
 Wenn das klappt: **Kasse läuft!** 🎉
 
@@ -300,10 +355,10 @@ Kassen-Pi kriegen:
 ```powershell
 # Am PC
 cd C:\Repos\markt-pilot\frontend
-$env:VITE_API_BASE = "http://192.168.2.196:8000"
+$env:VITE_API_BASE = "http://192.168.2.76:8000"
 cmd /c npm run build
 
-scp -r dist\* kasse@192.168.2.51:~/markt-pilot-frontend/
+scp -r dist\* globia1@192.168.2.51:~/markt-pilot-frontend/
 ```
 
 Die Pi braucht keinen Neustart — Chromium lädt die Seite beim nächsten
@@ -318,9 +373,9 @@ ich dir später ein `deploy-kasse.ps1` schreiben.
 
 ✅ **Funktioniert jetzt:**
 - Touchscreen-Kasse im Browser, autark
-- Liest Produkte vom Laptop-Server (192.168.2.196)
+- Liest Produkte vom Laptop-Server (192.168.2.76)
 - Verkäufe, Storno, Kassenbuch, Analytics
-- Offline-Modus: Cart läuft lokal, Outbox synct wenn Laptop-Server (192.168.2.196) wieder da
+- Offline-Modus: Cart läuft lokal, Outbox synct wenn Laptop-Server (192.168.2.76) wieder da
 
 ❌ **Noch nicht (kommt mit Tauri-Schritt):**
 - Drucker druckt die Bons noch nicht (nur Bildschirm-Anzeige)
@@ -355,26 +410,24 @@ den Touchscreen hat einen Knopf / Hotkey zum Aktivieren.
 ### Browser bleibt nicht im Vollbild
 
 Oft liegt's am `--kiosk`-Flag in Kombination mit Wayland (Pi 5 Default).
-Workaround: in den Autostart-Desktop-File einen kurzen Sleep + Restart einbauen:
-
-```ini
-Exec=/bin/sh -c "sleep 5 && /usr/bin/chromium --kiosk http://localhost:8080/"
-```
+Workaround: in der systemd-Service-Datei einen kurzen Sleep einbauen
+(`ExecStartPre=/bin/sleep 5`).
 
 ### nginx zeigt 502
 
 ```bash
 sudo systemctl status nginx
 # Falls nginx läuft aber 502: ist das dist/ Verzeichnis da?
-ls -la /home/kasse/marktpilot-frontend/
+ls -la /home/globia1/marktpilot-frontend/
 # Index.html muss da sein
 ```
 
 ### Frontend zeigt „Backend nicht erreichbar"
 
-- Hat der Laptop-Server (192.168.2.196) die richtige IP? (vom Browser aus `http://192.168.2.196:8000/healthz` testen)
-- Firewall auf Laptop-Server (192.168.2.196): Port 8000 offen? (siehe `PI-SETUP.md`)
-- Korrekter `VITE_API_BASE` beim Bauen gesetzt?
+- Hat der Laptop-Server die richtige IP? (vom Browser aus `http://<LAPTOP-IP>:8000/healthz` testen)
+- Firewall auf Laptop: Port 8000 offen? (siehe `LAPTOP-SETUP.md`)
+- Stimmt die IP in der nginx-Config auf der Pi? (`grep proxy_pass /etc/nginx/sites-available/marktpilot`)
+- Stimmt die Kasse-URL im Chromium? Sollte `http://localhost:8080/` sein (nicht die Laptop-IP)
 
 ---
 
@@ -382,12 +435,17 @@ ls -la /home/kasse/marktpilot-frontend/
 
 | Aufgabe | Befehl |
 |---|---|
-| Per SSH verbinden | `ssh kasse@192.168.2.51` |
+| Per SSH verbinden | `ssh globia1@<PI-IP>` |
 | nginx-Status | `sudo systemctl status nginx` |
 | nginx-Logs | `sudo journalctl -u nginx -f` |
-| nginx reload | `sudo systemctl reload nginx` |
+| nginx reload (nach Config-Änderung) | `sudo nginx -t && sudo systemctl reload nginx` |
+| Kiosk-Service-Status | `systemctl status marktpilot-kiosk.service` |
+| Kiosk-Service-Restart | `sudo systemctl restart marktpilot-kiosk.service` |
+| Kiosk-Logs | `sudo journalctl -u marktpilot-kiosk.service -f` |
+| Chromium killen (Systemd startet neu) | `pkill -f chromium` |
+| IP-Wechsel Laptop → nginx updaten | `sudo sed -i 's#ALT_IP#NEU_IP#g' /etc/nginx/sites-available/marktpilot && sudo nginx -t && sudo systemctl reload nginx` |
 | Pi neu starten | `sudo reboot` |
 | Pi ausschalten | `sudo shutdown -h now` |
-| Frontend-Verzeichnis | `/home/kasse/marktpilot-frontend/` |
-| API-URL im Frontend | `http://192.168.2.196:8000` (Laptop-Server (192.168.2.196)!) |
+| Frontend-Verzeichnis | `/home/globia1/marktpilot-frontend/` |
+| API-URL im Frontend | **relativ** (`/api/...`) — nginx proxt zum Laptop |
 | Kiosk-Browser-URL | `http://localhost:8080/` (lokaler nginx) |
