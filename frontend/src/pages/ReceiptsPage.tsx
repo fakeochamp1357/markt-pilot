@@ -9,13 +9,13 @@
  *
  * Vorgemerkt fuer spaeter (Phase B):
  *  - Filter: "Heute / Gestern / Diese Woche / Alle"
- *  - Z-Bericht (Tagesabschluss) am Listenende
  *  - Filter nach Bediener
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Receipt as ReceiptIcon, ListChecks, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Receipt as ReceiptIcon, ListChecks, Lock, Trash2 } from 'lucide-react';
 import { BottomSheet } from '@/components/BottomSheet';
-import { listReceipts, voidReceipt } from '@/api/client';
+import { apiErrorMessage, listReceipts, voidReceipt } from '@/api/client';
 import { formatPriceCents } from '@/utils/format';
 import type { Receipt, PaymentMethod } from '@/types/api';
 
@@ -101,9 +101,7 @@ export function ReceiptsPage() {
       await load();
       setOpenReceipt(null);
     } catch (e) {
-      window.alert(
-        e instanceof Error ? e.message : 'Storno fehlgeschlagen.'
-      );
+      window.alert(apiErrorMessage(e, 'Storno fehlgeschlagen.'));
     } finally {
       setVoiding(false);
     }
@@ -162,6 +160,10 @@ export function ReceiptsPage() {
             Storno-Volumen: {formatPriceCents(stats.stornoTotal)} (vom Umsatz bereits abgezogen)
           </p>
         )}
+        <Link to="/day-close" className="btn btn-secondary btn-sm mt-3">
+          <Lock size={14} />
+          Tagesabschluss
+        </Link>
       </section>
 
       {/* Liste */}

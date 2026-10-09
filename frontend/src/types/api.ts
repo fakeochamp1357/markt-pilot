@@ -11,6 +11,8 @@ export interface Category {
   created_at: string;
 }
 
+export type VatRate = 0 | 7 | 19;
+
 export interface Product {
   id: number;
   sku: string | null;
@@ -41,6 +43,8 @@ export interface Product {
   pack_unit: string | null;
   /** Barcode der Packung (optional, kann != barcode sein). */
   pack_barcode: string | null;
+  /** MwSt-Satz in Prozent (19, 7 oder 0). Pfand folgt dem Produkt-Satz. */
+  vat_rate: VatRate;
   /** VK in Cent — fuer mathefreie Cart-Berechnungen auf Pi. */
   sell_price_cents: number;
   /** EK in Cent (fuer Margenanzeige). */
@@ -126,6 +130,7 @@ export interface ReceiptLine {
   unit_price_cents: number;
   line_total_cents: number;
   comment: string | null;
+  vat_rate: number;
 }
 
 export interface Receipt {
@@ -166,6 +171,67 @@ export interface ReceiptCreatePayload {
     line_total_cents: number;
     comment?: string | null;
   }[];
+}
+
+// ---------------------------------------------------------------------------
+// Tagesabschluss / Z-Bericht
+// ---------------------------------------------------------------------------
+
+export interface ZReportPayment {
+  payment_method: PaymentMethod;
+  receipt_count: number;
+  total_cents: number;
+}
+
+export interface ZReportVat {
+  vat_rate: number;
+  gross_cents: number;
+  net_cents: number;
+  vat_cents: number;
+}
+
+export interface ZReport {
+  cash_session: string;
+  closed: boolean;
+  z_number: number | null;
+  closed_at: string | null;
+  cashier_name: string | null;
+  notes: string | null;
+  sale_count: number;
+  storno_count: number;
+  return_count: number;
+  first_receipt_number: string | null;
+  last_receipt_number: string | null;
+  total_cents: number;
+  storno_total_cents: number;
+  by_payment: ZReportPayment[];
+  by_vat: ZReportVat[];
+  cash_sales_cents: number;
+  opening_float_cents: number | null;
+  expected_cash_cents: number | null;
+  counted_cash_cents: number | null;
+  difference_cents: number | null;
+  /** Stueckelung in Cent (als String) -> Anzahl */
+  denominations: Record<string, number> | null;
+}
+
+export interface DayCloseCreatePayload {
+  opening_float_cents: number;
+  counted_cash_cents: number;
+  cashier_name?: string | null;
+  notes?: string | null;
+  denominations?: Record<string, number> | null;
+}
+
+export interface DayCloseSummary {
+  z_number: number;
+  cash_session: string;
+  closed_at: string;
+  total_cents: number;
+  expected_cash_cents: number;
+  counted_cash_cents: number;
+  difference_cents: number;
+  cashier_name: string | null;
 }
 
 // ---------------------------------------------------------------------------

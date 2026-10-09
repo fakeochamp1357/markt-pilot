@@ -18,6 +18,7 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
+    Text,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -137,6 +138,9 @@ class Product(Base):
     pack_barcode: Mapped[str | None] = mapped_column(
         String(32), nullable=True, index=True
     )
+    # MwSt-Satz in Prozent (19 = Regelsatz, 7 = ermaessigt, 0 = steuerfrei).
+    # Pfand folgt steuerlich dem Satz des Produkts.
+    vat_rate: Mapped[int] = mapped_column(Integer, nullable=False, default=19)
 
     category: Mapped["Category | None"] = relationship("Category", back_populates="products")
     stock_movements: Mapped[list["StockMovement"]] = relationship(
@@ -310,5 +314,42 @@ class ReceiptLine(Base):
     line_total_cents: Mapped[int] = mapped_column(Integer, nullable=False)
     # Optionaler Kommentar (z.B. "Wurst 100g" bei Wiegeware)
     comment: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    # MwSt-Satz zum Zeitpunkt des Verkaufs (Snapshot vom Produkt). Der
+    # Z-Bericht rechnet damit, auch wenn der Satz am Produkt spaeter wechselt.
+    vat_rate: Mapped[int] = mapped_column(Integer, nullable=False, default=19)
 
     receipt: Mapped["Receipt"] = relationship("Receipt", back_populates="lines")
+
+class DayClose(Base):
+    """Tagesabschluss (Z-Bericht) einer Kassen-Schicht.
+
+    Existiert ein DayClose fuer eine ``cash_session``, ist der Tag gesperrt:
+    es koennen keine Bons mehr darauf gebucht werden. Der Bericht wird beim
+    Abschluss als JSON eingefroren, damit er spaeter unveraendert
+    reproduzierbar ist.
+    """
+
+    __tablename__ = "day_closes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # Fortlaufende Z-Nummer ueber alle Abschluesse (1, 2, 3, ...)
+    z_number: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    cash_session: Mapped[str] = mapped_column(
+        String(40), nullable=False, unique=True, index=True
+    )
+    # Wechselgeld-Anfangsbestand in der Kasse
+    opening_float_cents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Soll-Bargeld laut Bons + Anfangsbestand
+    expected_cash_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Gezaehltes Bargeld
+    counted_cash_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Ist - Soll (negativ = Fehlbetrag)
+    difference_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    cashier_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Eingefrorener Z-Bericht als JSON
+    report_json: Mapped[str] = mapped_column(Text, nullable=False)
+    closed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )

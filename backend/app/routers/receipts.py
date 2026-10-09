@@ -5,6 +5,8 @@ GET : Liste / Detail / Storno
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -19,10 +21,12 @@ from app.services.idempotency import (
     record_response,
 )
 from app.services.receipts import (
+    DayClosedError,
     ReceiptError,
     TotalMismatchError,
     UnknownProductError,
     apply_receipt,
+    is_session_closed,
 )
 
 router = APIRouter(prefix="/api/receipts", tags=["receipts"])
@@ -61,7 +65,7 @@ def create_receipt(
                 response_body={"detail": str(exc)},
             )
         raise HTTPException(status_code=409, detail=str(exc))
-    except UnknownProductError as exc:
+    except (UnknownProductError, DayClosedError) as exc:
         if client_op_id:
             record_response(
                 db,
@@ -150,10 +154,15 @@ def void_receipt(
         )
 
     # Storno-Bon bauen — Total negiert, Lines negiert.
+    # Ist der Tag des Originals schon abgeschlossen, landet der Storno im
+    # heutigen Tag (der Z-Bericht des alten Tages bleibt unveraendert).
+    cash_session = original.cash_session
+    if is_session_closed(db, cash_session):
+        cash_session = datetime.now(timezone.utc).date().isoformat()
     storno_payload = ReceiptCreate(
         kind="storno",
         original_receipt_id=original.id,
-        cash_session=original.cash_session,
+        cash_session=cash_session,
         payment_method=original.payment_method,
         tendered_cents=0,
         change_cents=0,
@@ -171,6 +180,7 @@ def void_receipt(
                 "unit_price_cents": line.unit_price_cents,
                 "line_total_cents": -line.line_total_cents,
                 "comment": line.comment,
+                "vat_rate": line.vat_rate,
             }
             for line in original.lines
         ],

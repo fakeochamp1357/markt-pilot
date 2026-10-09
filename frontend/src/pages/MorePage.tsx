@@ -12,6 +12,7 @@ import {
   WifiOff,
   Settings,
   Receipt,
+  Lock,
 } from 'lucide-react';
 import { listOutbox } from '@/db/dexie';
 import { resetFailedOutboxEntries, syncOutboxOnce } from '@/hooks/useOutboxSync';
@@ -135,6 +136,13 @@ export function MorePage() {
         </Link>
         <p className="mt-1 text-xs text-ink-500">
           Tagesübersicht, alle Bons, Storno-Funktion.
+        </p>
+        <Link to="/day-close" className="btn btn-secondary w-full">
+          <Lock size={16} />
+          Tagesabschluss (Z-Bericht)
+        </Link>
+        <p className="mt-1 text-xs text-ink-500">
+          Kasse zählen, Differenz prüfen, Tag sperren.
         </p>
       </Section>
 

@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 
 from app.db.session import Base, engine
-from app.routers import analytics, categories, products, receipts, stock
+from app.routers import analytics, categories, day_close, products, receipts, stock
 
 # Modelle registrieren (müssen vor ``create_all`` importiert sein)
 import app.models  # noqa: F401
@@ -38,6 +38,9 @@ _LEGACY_COLUMN_HINTS: list[tuple[str, str, str, str | None]] = [
     ("products", "pack_barcode", "VARCHAR(32)", None),
     # receipts-Tabelle: print_requested (Migration c1d2e3f4a5b6)
     ("receipts", "print_requested", "BOOLEAN", "1"),
+    # MwSt-Saetze (Migration d2e3f4a5b6c7)
+    ("products", "vat_rate", "INTEGER", "19"),
+    ("receipt_lines", "vat_rate", "INTEGER", "19"),
 ]
 
 
@@ -141,3 +144,4 @@ app.include_router(categories.router)
 app.include_router(stock.router)
 app.include_router(receipts.router)
 app.include_router(analytics.router)
+app.include_router(day_close.router)

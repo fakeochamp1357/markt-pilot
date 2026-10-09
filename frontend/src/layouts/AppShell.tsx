@@ -11,6 +11,7 @@ const TITLES: Record<string, string> = {
   '/analytics': 'Analyse',
   '/more': 'Mehr',
   '/receipts': 'Kassenbuch',
+  '/day-close': 'Tagesabschluss',
 };
 
 export function AppShell() {

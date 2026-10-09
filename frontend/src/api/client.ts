@@ -4,6 +4,8 @@ import type {
   AnalyticsSortBy,
   Category,
   DashboardSummary,
+  DayCloseCreatePayload,
+  DayCloseSummary,
   DeadStockRow,
   ExpiringProduct,
   ExpiryAlert,
@@ -19,6 +21,7 @@ import type {
   StockMovementList,
   StockReason,
   TopSeller,
+  ZReport,
 } from '@/types/api';
 
 const BASE_URL = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000/api';
@@ -197,6 +200,40 @@ export async function getReceiptByNumber(number: string): Promise<Receipt> {
 export async function voidReceipt(id: number): Promise<Receipt> {
   const { data } = await api.post<Receipt>(`/receipts/${id}/void`);
   return data;
+}
+
+// ---------- Tagesabschluss ----------
+
+/** Z-Bericht einer Schicht — live (offen) oder eingefroren (abgeschlossen). */
+export async function getZReport(cashSession: string): Promise<ZReport> {
+  const { data } = await api.get<ZReport>(`/day-close/${encodeURIComponent(cashSession)}`);
+  return data;
+}
+
+/** Schliesst den Tag ab und sperrt ihn fuer weitere Bons. */
+export async function closeDay(
+  cashSession: string,
+  payload: DayCloseCreatePayload,
+): Promise<ZReport> {
+  const { data } = await api.post<ZReport>(
+    `/day-close/${encodeURIComponent(cashSession)}`,
+    payload,
+  );
+  return data;
+}
+
+export async function listDayCloses(limit = 30): Promise<DayCloseSummary[]> {
+  const { data } = await api.get<DayCloseSummary[]>('/day-close', { params: { limit } });
+  return data;
+}
+
+/** Liest die ``detail``-Meldung des Backends aus einem Axios-Fehler. */
+export function apiErrorMessage(e: unknown, fallback: string): string {
+  if (axios.isAxiosError(e)) {
+    const detail = (e.response?.data as { detail?: unknown } | undefined)?.detail;
+    if (typeof detail === 'string') return detail;
+  }
+  return e instanceof Error ? e.message : fallback;
 }
 
 // ---------- Analytics ----------

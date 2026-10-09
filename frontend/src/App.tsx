@@ -8,6 +8,7 @@ import { AnalyticsPage } from '@/pages/AnalyticsPage';
 import { MorePage } from '@/pages/MorePage';
 import { POSPage } from '@/pages/POSPage';
 import { ReceiptsPage } from '@/pages/ReceiptsPage';
+import { DayClosePage } from '@/pages/DayClosePage';
 import { useOutboxSync } from '@/hooks/useOutboxSync';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/more" element={<MorePage />} />
         <Route path="/receipts" element={<ReceiptsPage />} />
+        <Route path="/day-close" element={<DayClosePage />} />
         <Route path="*" element={<POSPage />} />
       </Route>
     </Routes>
