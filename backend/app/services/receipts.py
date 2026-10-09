@@ -20,7 +20,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Product, Receipt, ReceiptLine, StockMovement
+from app.models import DayClose, Product, Receipt, ReceiptLine, StockMovement
 from app.schemas import ReceiptCreate
 
 
@@ -34,6 +34,18 @@ class TotalMismatchError(ReceiptError):
 
 class UnknownProductError(ReceiptError):
     """Eine Position verweist auf ein Produkt, das (nicht oder nicht mehr) existiert."""
+
+
+class DayClosedError(ReceiptError):
+    """Die Schicht ist per Tagesabschluss gesperrt — keine Buchungen mehr."""
+
+
+DEFAULT_VAT_RATE = 19
+
+
+def is_session_closed(db: Session, cash_session: str) -> bool:
+    stmt = select(DayClose.id).where(DayClose.cash_session == cash_session)
+    return db.execute(stmt).scalar_one_or_none() is not None
 
 
 def _next_receipt_number(db: Session) -> str:
@@ -70,9 +82,15 @@ def apply_receipt(
     """Validiert und persistiert einen Kassenbon samt Stock-Movements.
 
     Raises:
+        DayClosedError: Die Schicht ist bereits abgeschlossen.
         TotalMismatchError: Client-total weicht von der Server-Berechnung ab.
         UnknownProductError: Line.product_id zeigt auf nicht-existentes Produkt.
     """
+    if is_session_closed(db, payload.cash_session):
+        raise DayClosedError(
+            f"Tag {payload.cash_session} ist abgeschlossen — keine Buchungen mehr moeglich."
+        )
+
     # 1) Server-seitige Total-Berechnung aus den Lines.
     computed_total = 0
     # Snapshot-Felder aus DB ziehen, damit Client kein Ghost-Snapshots
@@ -124,6 +142,15 @@ def apply_receipt(
     # Bei storno: ignoriert Stock (der Originalbon muss separat storniert
     #             werden), hier nur die Storno-Position auf dem Bon.
     for idx, line in enumerate(payload.lines):
+        # MwSt-Satz kommt vom Produkt (nicht vom Client). Storno-Zeilen
+        # uebernehmen den Satz des Originalbons, damit sie sich im Z-Bericht
+        # exakt aufheben.
+        if line.kind == "storno" and line.vat_rate is not None:
+            vat_rate = line.vat_rate
+        elif line.product_id is not None:
+            vat_rate = product_cache[line.product_id].vat_rate
+        else:
+            vat_rate = line.vat_rate if line.vat_rate is not None else DEFAULT_VAT_RATE
         db.add(
             ReceiptLine(
                 receipt_id=receipt.id,
@@ -136,6 +163,7 @@ def apply_receipt(
                 unit_price_cents=line.unit_price_cents,
                 line_total_cents=line.line_total_cents,
                 comment=line.comment,
+                vat_rate=vat_rate,
             )
         )
 

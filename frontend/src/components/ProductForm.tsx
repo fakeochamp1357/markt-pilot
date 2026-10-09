@@ -3,7 +3,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ScanLine, Calculator, Save } from 'lucide-react';
-import type { Category, Product } from '@/types/api';
+import type { Category, Product, VatRate } from '@/types/api';
 import { UNITS } from '@/types/api';
 import { computeMargin, formatPrice } from '@/utils/format';
 
@@ -47,6 +47,7 @@ const Schema = z.object({
   notes: z.string().max(1000).nullable().optional().or(z.literal('')),
   // POS-Erweiterungen
   deposit_cents: z.coerce.number().int().min(0).default(0),
+  vat_rate: z.coerce.number().refine((v) => v === 0 || v === 7 || v === 19).default(19),
   pieces_per_pack: z.coerce.number().int().min(1).default(1),
   pack_unit: z.string().max(20).nullable().optional().or(z.literal('')),
   pack_barcode: z.string().max(32).nullable().optional().or(z.literal('')),
@@ -108,6 +109,7 @@ export function ProductForm({
       supplier: initial?.supplier ?? '',
       notes: initial?.notes ?? '',
       deposit_cents: initial?.deposit_cents ?? 0,
+      vat_rate: initial?.vat_rate ?? 19,
       pieces_per_pack: initial?.pieces_per_pack ?? 1,
       pack_unit: initial?.pack_unit ?? '',
       pack_barcode: initial?.pack_barcode ?? '',
@@ -151,6 +153,7 @@ export function ProductForm({
       color_tag: initial?.color_tag ?? '#3B82F6',
       currency: initial?.currency ?? 'EUR',
       deposit_cents: vals.deposit_cents ?? 0,
+      vat_rate: (vals.vat_rate ?? 19) as VatRate,
       pieces_per_pack: vals.pieces_per_pack ?? 1,
       pack_unit: vals.pack_unit?.trim() ? vals.pack_unit.trim() : null,
       pack_barcode: vals.pack_barcode?.trim() ? vals.pack_barcode.trim() : null,
@@ -363,6 +366,17 @@ export function ProductForm({
               {...register('pack_barcode')}
             />
           </div>
+        </div>
+        <div>
+          <label className="label" htmlFor="f-vat">MwSt-Satz</label>
+          <select id="f-vat" className="input" {...register('vat_rate')}>
+            <option value={19}>19 % (Regelsatz)</option>
+            <option value={7}>7 % (ermäßigt, z.B. Lebensmittel)</option>
+            <option value={0}>0 % (steuerfrei)</option>
+          </select>
+          <p className="mt-1 text-xs text-[color:var(--text-muted)]">
+            Pfand wird mit dem gleichen Satz versteuert.
+          </p>
         </div>
       </fieldset>
 

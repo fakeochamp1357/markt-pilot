@@ -12,7 +12,7 @@ import { Plus, Minus, Trash2, ShoppingCart, ScanLine, X, Search, CheckCircle2, C
 import { BottomSheet } from '@/components/BottomSheet';
 import { useMarketData } from '@/hooks/useData';
 import { useCartStore } from '@/store/cart';
-import { createReceipt, voidReceipt } from '@/api/client';
+import { apiErrorMessage, createReceipt, voidReceipt } from '@/api/client';
 import type { Product, Receipt } from '@/types/api';
 import { formatPriceCents } from '@/utils/format';
 
@@ -117,8 +117,7 @@ export function POSPage() {
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error('[POS] checkout failed', e);
-      const msg =
-        e instanceof Error ? e.message : 'Bezahlvorgang fehlgeschlagen.';
+      const msg = apiErrorMessage(e, 'Bezahlvorgang fehlgeschlagen.');
       setErrorMsg(`${msg} (Bon wurde NICHT gebucht — versuche es erneut oder pruefe das Backend.)`);
     } finally {
       setBusy(false);

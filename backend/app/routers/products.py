@@ -44,7 +44,8 @@ def _apply_payload(product: Product, payload: dict[str, Any]) -> None:
     for key in ("sku", "barcode", "name", "category_id", "unit", "size_weight",
                 "currency", "expiry_date", "supplier", "notes",
                 "image_url", "color_tag", "is_active",
-                "deposit_cents", "pieces_per_pack", "pack_unit", "pack_barcode"):
+                "deposit_cents", "pieces_per_pack", "pack_unit", "pack_barcode",
+                "vat_rate"):
         if key in payload and payload[key] is not None:
             setattr(product, key, payload[key])
 

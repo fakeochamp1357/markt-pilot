@@ -26,6 +26,9 @@ PriceDecimal = Annotated[
     ),
 ]
 
+# Erlaubte MwSt-Saetze in Deutschland (Prozent).
+VatRate = Literal[0, 7, 19]
+
 QuantityDecimal = Annotated[
     Decimal,
     Field(
@@ -114,6 +117,7 @@ class ProductCreate(ProductBase):
     pieces_per_pack: int = Field(1, ge=1)
     pack_unit: str | None = Field(None, max_length=20)
     pack_barcode: str | None = Field(None, max_length=32)
+    vat_rate: VatRate = 19
 
 
 class ProductUpdate(BaseModel):
@@ -142,6 +146,7 @@ class ProductUpdate(BaseModel):
     pieces_per_pack: int | None = Field(None, ge=1)
     pack_unit: str | None = Field(None, max_length=20)
     pack_barcode: str | None = Field(None, max_length=32)
+    vat_rate: VatRate | None = None
 
 
 class ProductRead(ProductBase):
@@ -155,6 +160,7 @@ class ProductRead(ProductBase):
     pieces_per_pack: int
     pack_unit: str | None
     pack_barcode: str | None
+    vat_rate: int
     # Preis sowohl als Decimal-String (fuer Display) als auch als int in Cent
     # (fuer mathefreie Berechnungen im Frontend, z.B. POS-Warenkorb).
     sell_price_cents: int
@@ -189,6 +195,7 @@ class ProductRead(ProductBase):
             pieces_per_pack=obj.pieces_per_pack,
             pack_unit=obj.pack_unit,
             pack_barcode=obj.pack_barcode,
+            vat_rate=obj.vat_rate,
             sell_price_cents=obj.sell_price_cents,
             cost_price_cents=obj.cost_price_cents,
         )
@@ -517,6 +524,9 @@ class ReceiptLineCreate(BaseModel):
     unit_price_cents: int
     line_total_cents: int
     comment: str | None = Field(None, max_length=200)
+    # Nur fuer Storno-Zeilen und Positionen ohne Produkt relevant; sonst
+    # bestimmt der Server den Satz aus dem Produkt.
+    vat_rate: VatRate | None = None
 
 
 class ReceiptCreate(BaseModel):
@@ -556,6 +566,7 @@ class ReceiptLineRead(BaseModel):
     unit_price_cents: int
     line_total_cents: int
     comment: str | None
+    vat_rate: int
 
 
 class ReceiptRead(BaseModel):
@@ -607,6 +618,90 @@ __all__ = [
     "ReorderAlert",
     "DashboardSummary",
     "NotificationItem",
+    "ZReport",
+    "ZReportPayment",
+    "ZReportVat",
+    "DayCloseCreate",
+    "DayCloseSummary",
+    "EURO_DENOMINATIONS_CENTS",
     "cents_to_decimal",
     "decimal_to_cents",
 ]
+
+# ---------------------------------------------------------------------------
+# Tagesabschluss / Z-Bericht
+# ---------------------------------------------------------------------------
+
+# Euro-Stueckelungen in Cent fuer das Zaehlprotokoll.
+EURO_DENOMINATIONS_CENTS = (
+    50000, 20000, 10000, 5000, 2000, 1000, 500,
+    200, 100, 50, 20, 10, 5, 2, 1,
+)
+
+
+class ZReportPayment(BaseModel):
+    payment_method: str
+    receipt_count: int
+    total_cents: int
+
+
+class ZReportVat(BaseModel):
+    vat_rate: int
+    gross_cents: int
+    net_cents: int
+    vat_cents: int
+
+
+class ZReport(BaseModel):
+    """Z-Bericht einer Schicht — live (offen) oder eingefroren (abgeschlossen)."""
+
+    cash_session: str
+    closed: bool
+    z_number: int | None = None
+    closed_at: datetime | None = None
+    cashier_name: str | None = None
+    notes: str | None = None
+
+    sale_count: int
+    storno_count: int
+    return_count: int
+    first_receipt_number: str | None
+    last_receipt_number: str | None
+
+    # Umsatz brutto inkl. Pfand, Stornos/Retouren bereits abgezogen
+    total_cents: int
+    storno_total_cents: int
+    by_payment: list[ZReportPayment]
+    by_vat: list[ZReportVat]
+
+    # Kassenbestand
+    cash_sales_cents: int
+    opening_float_cents: int | None = None
+    expected_cash_cents: int | None = None
+    counted_cash_cents: int | None = None
+    difference_cents: int | None = None
+    denominations: dict[str, int] | None = None
+
+
+class DayCloseCreate(BaseModel):
+    """POST-Body fuer den Tagesabschluss."""
+
+    opening_float_cents: int = Field(0, ge=0)
+    counted_cash_cents: int = Field(..., ge=0)
+    cashier_name: str | None = Field(None, max_length=80)
+    notes: str | None = Field(None, max_length=500)
+    # Zaehlprotokoll: Stueckelung in Cent (als String) -> Anzahl
+    denominations: dict[str, int] | None = None
+
+
+class DayCloseSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    z_number: int
+    cash_session: str
+    closed_at: datetime
+    total_cents: int
+    expected_cash_cents: int
+    counted_cash_cents: int
+    difference_cents: int
+    cashier_name: str | None
